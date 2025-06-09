@@ -1,0 +1,58 @@
+# Dependencies
+/node_modules
+/functions/node_modules
+/findr/node_modules
+/how-to-scrape-amazon-prices/dist
+/how-to-scrape-amazon-prices/build
+/how-to-scrape-amazon-prices/.venv
+
+# Build output
+/dist
+/target
+/price-comparator/target
+/dataconnect-generated
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Firebase
+price-comparator-23ac4-firebase-adminsdk-fbsvc-a9eb8ddc35.json
+.firebase/
+*.firebase.*
+!firebase.json
+
+# VS Code
+.vscode/
+
+# IntelliJ IDEA
+.idea/
+
+# STS
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+
+# Custom
+memory-bank/
