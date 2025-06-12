@@ -2,9 +2,15 @@ package com.example.price_comparator.service;
 
 import com.example.price_comparator.model.ProductDocument;
 import com.example.price_comparator.model.User;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class FirebaseService {
@@ -19,11 +25,29 @@ public class FirebaseService {
 
     public void saveProduct(ProductDocument product) {
         if (product != null && product.getId() != null) {
-            try {
-                productsRef.child(product.getId()).setValueAsync(product).get();
-            } catch (Exception e) {
-                e.printStackTrace();
+            productsRef.child(product.getId()).setValueAsync(product);
+        }
+    }
+
+    public Optional<ProductDocument> getProduct(String id) {
+        CompletableFuture<Optional<ProductDocument>> future = new CompletableFuture<>();
+        productsRef.child(id).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                ProductDocument product = dataSnapshot.getValue(ProductDocument.class);
+                future.complete(Optional.ofNullable(product));
             }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                future.completeExceptionally(databaseError.toException());
+            }
+        });
+        try {
+            return future.get();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Optional.empty();
         }
     }
 
