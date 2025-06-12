@@ -5,16 +5,33 @@ import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import SearchBar from '../components/SearchBar';
 import ProductCard from '../components/ProductCard';
-import { mockFeaturedProducts } from '../data/mockData';
+import { useProducts } from '../context/ProductContext';
 
 const HomePage = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const { featuredProducts, loading, error } = useProducts();
+  const [categories, setCategories] = useState<string[]>([]);
   
   // Intersection observer hooks for animation
   const [heroRef, heroInView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const [featuredRef, featuredInView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const [benefitsRef, benefitsInView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const [categoriesRef, categoriesInView] = useInView({ triggerOnce: true, threshold: 0.1 });
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/v1/products/categories');
+        const data = await response.json();
+        setCategories(data);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
   
   // Handle search
   const handleSearch = (e: React.FormEvent) => {
@@ -162,7 +179,9 @@ const HomePage = () => {
             animate={featuredInView ? "visible" : "hidden"}
             variants={containerVariants}
           >
-            {mockFeaturedProducts.map((product) => (
+            {loading && <p>Loading products...</p>}
+            {error && <p className="text-red-500">{error}</p>}
+            {featuredProducts.map((product) => (
               <motion.div key={product.id} variants={itemVariants}>
                 <ProductCard product={product} />
               </motion.div>
@@ -187,10 +206,56 @@ const HomePage = () => {
         </div>
       </section>
       
+      {/* Categories Section */}
+      <section 
+        ref={categoriesRef}
+        className="py-16 bg-gray-50"
+      >
+        <div className="container mx-auto px-4 md:px-6">
+          <motion.div 
+            className="text-center mb-12"
+            initial="hidden"
+            animate={categoriesInView ? "visible" : "hidden"}
+            variants={containerVariants}
+          >
+            <motion.h2 
+              className="text-3xl font-bold text-secondary mb-4"
+              variants={itemVariants}
+            >
+              Shop by Category
+            </motion.h2>
+            <motion.p 
+              className="text-gray-600 max-w-2xl mx-auto"
+              variants={itemVariants}
+            >
+              Browse our most popular categories.
+            </motion.p>
+          </motion.div>
+          
+          <motion.div 
+            className="grid grid-cols-2 md:grid-cols-4 gap-4"
+            initial="hidden"
+            animate={categoriesInView ? "visible" : "hidden"}
+            variants={containerVariants}
+          >
+            {categories.map((category, index) => (
+              <motion.div 
+                key={index}
+                className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-all text-center cursor-pointer"
+                variants={itemVariants}
+                onClick={() => navigate(`/search?q=${encodeURIComponent(category)}`)}
+              >
+                <h3 className="text-xl font-semibold">{category}</h3>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
       {/* Benefits Section */}
       <section 
         ref={benefitsRef}
-        className="py-16 bg-gray-50"
+        className="py-16 bg-white"
       >
         <div className="container mx-auto px-4 md:px-6">
           <motion.div 

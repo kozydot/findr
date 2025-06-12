@@ -18,9 +18,10 @@ public class PriceApiServiceTest {
         // This is a live API test and requires a valid API key and network connection.
         // In a real-world scenario, you would mock the API response.
         String query = "B07ZPKBL9V";
-        ProductDocument product = priceApiService.fetchProductData("amazon", query);
+        java.util.List<ProductDocument> products = priceApiService.fetchProductData("amazon", query);
 
-        // assertNotNull(product, "Product data should not be null");
-        // assertNotNull(product.getName(), "Product name should not be null");
+        // assertNotNull(products, "Product data should not be null");
+        // assertFalse(products.isEmpty(), "Product list should not be empty");
+        // assertNotNull(products.get(0).getName(), "Product name should not be null");
     }
 }

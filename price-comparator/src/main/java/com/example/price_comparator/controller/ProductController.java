@@ -36,6 +36,13 @@ public class ProductController {
         return ResponseEntity.ok(products);
     }
 
+    @GetMapping("/trending")
+    public ResponseEntity<List<ProductDocument>> getTrendingProducts() {
+        logger.info("Received request for trending products");
+        List<ProductDocument> products = productService.getTrendingProducts();
+        return ResponseEntity.ok(products);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ProductDocument> getProductById(@PathVariable String id) {
         logger.info("Received request for product with ID: {}", id);
@@ -52,6 +59,30 @@ public class ProductController {
         }
         List<ProductDocument> products = productService.searchProducts(q);
         return ResponseEntity.ok(products);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ProductDocument>> getAllProducts() {
+        logger.info("Received request for all products");
+        List<ProductDocument> products = productService.getAllProducts();
+        return ResponseEntity.ok(products);
+    }
+
+    @GetMapping("/categories")
+    public ResponseEntity<List<String>> getCategories() {
+        logger.info("Received request for categories");
+        List<String> categories = productService.getAmazonCategories();
+        return ResponseEntity.ok(categories);
+    }
+
+    @GetMapping("/compare/{productId}")
+    public ResponseEntity<ProductDocument> comparePrices(@PathVariable String productId) {
+        logger.info("Received request to compare prices for product with ID: {}", productId);
+        ProductDocument product = productService.compareAndSaveProduct(productId);
+        if (product != null) {
+            return ResponseEntity.ok(product);
+        }
+        return ResponseEntity.notFound().build();
     }
 
     // Example endpoint to manually trigger a scrape for a specific Noon URL (for testing)

@@ -1,9 +1,11 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Product } from '../types';
-import { mockProductDetails } from '../data/mockData';
 
 interface ProductContextType {
+  products: Product[];
   featuredProducts: Product[];
+  loading: boolean;
+  error: string | null;
   getProductById: (id: string) => Product | undefined;
   searchProducts: (query: string) => Product[];
 }
@@ -11,24 +13,60 @@ interface ProductContextType {
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
 export const ProductProvider = ({ children }: { children: ReactNode }) => {
-  const [featuredProducts] = useState<Product[]>(mockProductDetails.slice(0, 6));
+  const [products, setProducts] = useState<Product[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('/api/v1/products');
+        if (!response.ok) {
+          throw new Error('Failed to fetch products');
+        }
+        const data = await response.json();
+        setProducts(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchFeaturedProducts = async () => {
+      try {
+        const response = await fetch('/api/v1/products/featured');
+        if (!response.ok) {
+          throw new Error('Failed to fetch featured products');
+        }
+        const data = await response.json();
+        setFeaturedProducts(data);
+      } catch (err: any) {
+        setError(err.message);
+      }
+    };
+
+    fetchProducts();
+    fetchFeaturedProducts();
+  }, []);
   
   const getProductById = (id: string): Product | undefined => {
-    return mockProductDetails.find(product => product.id === id);
+    return products.find(product => product.id === id);
   };
   
   const searchProducts = (query: string): Product[] => {
-    if (!query) return mockProductDetails;
+    if (!query) return products;
     
     const lowerQuery = query.toLowerCase();
-    return mockProductDetails.filter(product => 
+    return products.filter(product => 
       product.name.toLowerCase().includes(lowerQuery) ||
-      product.description.toLowerCase().includes(lowerQuery)
+      (product.description && product.description.toLowerCase().includes(lowerQuery))
     );
   };
-  
+
   return (
-    <ProductContext.Provider value={{ featuredProducts, getProductById, searchProducts }}>
+    <ProductContext.Provider value={{ products, featuredProducts, loading, error, getProductById, searchProducts }}>
       {children}
     </ProductContext.Provider>
   );

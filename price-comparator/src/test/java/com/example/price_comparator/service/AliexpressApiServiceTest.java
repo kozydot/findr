@@ -15,8 +15,9 @@ public class AliexpressApiServiceTest {
 
     @Test
     public void testSearchProducts() {
-        ProductDocument product = aliexpressApiService.searchProducts("test");
-        assertNotNull(product, "Product data should not be null");
-        assertNotNull(product.getName(), "Product name should not be null");
+        java.util.List<ProductDocument> products = aliexpressApiService.searchProducts("test");
+        assertNotNull(products, "Product data should not be null");
+        assertFalse(products.isEmpty(), "Product list should not be empty");
+        assertNotNull(products.get(0).getName(), "Product name should not be null");
     }
 }

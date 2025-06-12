@@ -25,14 +25,23 @@ public class ProductService {
 
     public List<ProductDocument> getFeaturedProducts(int limit) {
         logger.info("Fetching {} featured products", limit);
-        // This would require a more complex query on Firebase, which is not straightforward.
-        // For now, we'll return an empty list.
-        return List.of();
+        List<ProductDocument> allProducts = firebaseService.getAllProducts();
+        return allProducts.subList(0, Math.min(limit, allProducts.size()));
+    }
+
+    public List<ProductDocument> getTrendingProducts() {
+        logger.info("Fetching trending products");
+        return priceApiService.fetchProductData("amazon", "electronics");
     }
 
     public Optional<ProductDocument> getProductById(String id) {
         logger.info("Fetching product by ID: {}", id);
         return firebaseService.getProduct(id);
+    }
+
+    public List<ProductDocument> getAllProducts() {
+        logger.info("Fetching all products");
+        return firebaseService.getAllProducts();
     }
 
     public List<ProductDocument> searchProducts(String query) {
@@ -42,27 +51,65 @@ public class ProductService {
         return List.of();
     }
 
+    public List<String> getAmazonCategories() {
+        logger.info("Fetching categories from Amazon");
+        // This is a placeholder. In a real application, you would have a mechanism
+        // to fetch and store categories from Amazon.
+        return List.of("Electronics", "Computers", "Smart Home", "Video Games");
+    }
+
     public ProductDocument saveProduct(ProductDocument product) {
         logger.info("Saving product to Firebase: {}", product.getName());
         firebaseService.saveProduct(product);
         return product;
     }
 
-    public void updateAllProducts(String query) {
-        ProductDocument amazonProduct = priceApiService.fetchProductData("amazon", query);
-        if (amazonProduct != null) {
-            saveProduct(amazonProduct);
-            System.out.println("Successfully processed product data for: " + amazonProduct.getName());
-        } else {
-            System.out.println("Failed to fetch product data for query: " + query);
+    public ProductDocument compareAndSaveProduct(String productId) {
+        Optional<ProductDocument> productOptional = getProductById(productId);
+        if (productOptional.isEmpty()) {
+            return null;
         }
 
-        ProductDocument aliexpressProduct = priceApiService.fetchProductData("aliexpress", query);
+        ProductDocument product = productOptional.get();
+        
+        ProductDocument amazonProduct = priceApiService.getProductDetails("amazon", productId);
+        if (amazonProduct != null) {
+            product.getRetailers().addAll(amazonProduct.getRetailers());
+        }
+
+        ProductDocument aliexpressProduct = priceApiService.getProductDetails("aliexpress", productId);
         if (aliexpressProduct != null) {
-            saveProduct(aliexpressProduct);
-            System.out.println("Successfully processed product data for: " + aliexpressProduct.getName());
+            product.getRetailers().addAll(aliexpressProduct.getRetailers());
+        }
+
+        return saveProduct(product);
+    }
+
+    public void updateAllProducts(String query) {
+        logger.info("Fetching products from Amazon for query: {}", query);
+        List<ProductDocument> amazonProducts = priceApiService.fetchProductData("amazon", query);
+        if (amazonProducts != null && !amazonProducts.isEmpty()) {
+            for (ProductDocument product : amazonProducts) {
+                if (product != null && product.getName() != null) {
+                    saveProduct(product);
+                    logger.info("Successfully processed product data for: " + product.getName());
+                }
+            }
         } else {
-            System.out.println("Failed to fetch product data for query: " + query);
+            logger.error("Failed to fetch product data from Amazon for query: " + query);
+        }
+
+        logger.info("Fetching products from Aliexpress for query: {}", query);
+        List<ProductDocument> aliexpressProducts = priceApiService.fetchProductData("aliexpress", query);
+        if (aliexpressProducts != null && !aliexpressProducts.isEmpty()) {
+            for (ProductDocument product : aliexpressProducts) {
+                if (product != null && product.getName() != null) {
+                    saveProduct(product);
+                    logger.info("Successfully processed product data for: " + product.getName());
+                }
+            }
+        } else {
+            logger.error("Failed to fetch product data from Aliexpress for query: " + query);
         }
     }
 }

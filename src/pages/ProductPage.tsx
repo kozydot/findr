@@ -2,12 +2,11 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
   Share2, Star, ChevronRight, ArrowLeft, 
-  ShoppingCart, ExternalLink, Heart
+  ShoppingCart, ExternalLink, Heart, Bell
 } from 'lucide-react';
 import PriceHistoryChart from '../components/PriceHistoryChart';
 import PriceComparisonTable from '../components/PriceComparisonTable';
 import AlertForm from '../components/AlertForm';
-import { mockProductDetails } from '../data/mockData';
 import { Product } from '../types';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,23 +19,27 @@ const ProductPage = () => {
   const { isAuthenticated } = useAuth();
   
   useEffect(() => {
-    // Simulate API call
     const fetchProduct = async () => {
       setIsLoading(true);
       try {
-        // Find product in mock data
-        const foundProduct = mockProductDetails.find(p => p.id === id);
-        if (foundProduct) {
-          setProduct(foundProduct);
+        const response = await fetch(`/api/v1/products/${id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setProduct(data);
+        } else {
+          setProduct(null);
         }
       } catch (error) {
         console.error('Error fetching product:', error);
+        setProduct(null);
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchProduct();
+    if (id) {
+      fetchProduct();
+    }
   }, [id]);
   
   if (isLoading) {
@@ -62,13 +65,13 @@ const ProductPage = () => {
   }
   
   // Get best price and retailer
-  const lowestPrice = Math.min(
-    ...product.retailers.map(retailer => retailer.currentPrice)
-  );
+  const lowestPrice = product.retailers && product.retailers.length > 0 
+    ? Math.min(...product.retailers.map(retailer => retailer.currentPrice))
+    : 0;
   
-  const bestRetailer = product.retailers.find(
-    retailer => retailer.currentPrice === lowestPrice
-  );
+  const bestRetailer = product.retailers && product.retailers.length > 0
+    ? product.retailers.find(retailer => retailer.currentPrice === lowestPrice)
+    : null;
   
   const handleShareClick = () => {
     if (navigator.share) {
@@ -243,7 +246,7 @@ const ProductPage = () => {
               </div>
             ) : (
               <div className="space-y-2">
-                {product.specifications.map((spec, index) => (
+                {product.specifications && product.specifications.map((spec, index) => (
                   <div key={index} className="grid grid-cols-2 py-2 border-b border-gray-100 text-sm">
                     <div className="font-medium text-gray-700">{spec.name}</div>
                     <div>{spec.value}</div>
@@ -285,7 +288,7 @@ const ProductPage = () => {
       </div>
       
       {/* Similar products */}
-      <div className="mt-12">
+      {/* <div className="mt-12">
         <h2 className="text-2xl font-bold mb-6">Similar Products</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {mockProductDetails.slice(0, 4).map((similarProduct) => (
@@ -322,7 +325,7 @@ const ProductPage = () => {
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

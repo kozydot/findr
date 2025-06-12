@@ -17,10 +17,12 @@ public class FirebaseService {
 
     private final DatabaseReference productsRef;
     private final DatabaseReference usersRef;
+    private final DatabaseReference metadataRef;
 
     public FirebaseService(FirebaseDatabase firebaseDatabase) {
         this.productsRef = firebaseDatabase.getReference("products");
         this.usersRef = firebaseDatabase.getReference("users");
+        this.metadataRef = firebaseDatabase.getReference("metadata");
     }
 
     public void saveProduct(ProductDocument product) {
@@ -51,6 +53,32 @@ public class FirebaseService {
         }
     }
 
+    public java.util.List<ProductDocument> getAllProducts() {
+        CompletableFuture<java.util.List<ProductDocument>> future = new CompletableFuture<>();
+        productsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                java.util.List<ProductDocument> products = new java.util.ArrayList<>();
+                for (DataSnapshot productSnapshot : dataSnapshot.getChildren()) {
+                    ProductDocument product = productSnapshot.getValue(ProductDocument.class);
+                    products.add(product);
+                }
+                future.complete(products);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                future.completeExceptionally(databaseError.toException());
+            }
+        });
+        try {
+            return future.get();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return java.util.Collections.emptyList();
+        }
+    }
+
     public void saveUser(User user) {
         if (user != null) {
             try {
@@ -58,6 +86,36 @@ public class FirebaseService {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    public long getLastAmazonFetchTimestamp() {
+        CompletableFuture<Long> future = new CompletableFuture<>();
+        metadataRef.child("lastAmazonFetch").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Long timestamp = dataSnapshot.getValue(Long.class);
+                future.complete(timestamp != null ? timestamp : 0L);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                future.completeExceptionally(databaseError.toException());
+            }
+        });
+        try {
+            return future.get();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0L;
+        }
+    }
+
+    public void updateLastAmazonFetchTimestamp(long timestamp) {
+        try {
+            metadataRef.child("lastAmazonFetch").setValueAsync(timestamp).get();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
