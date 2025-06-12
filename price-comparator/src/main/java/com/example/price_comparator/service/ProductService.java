@@ -15,10 +15,12 @@ public class ProductService {
     private static final Logger logger = LoggerFactory.getLogger(ProductService.class);
 
     private final FirebaseService firebaseService;
+    private final PriceApiService priceApiService;
 
     @Autowired
-    public ProductService(FirebaseService firebaseService) {
+    public ProductService(FirebaseService firebaseService, PriceApiService priceApiService) {
         this.firebaseService = firebaseService;
+        this.priceApiService = priceApiService;
     }
 
     public List<ProductDocument> getFeaturedProducts(int limit) {
@@ -44,5 +46,23 @@ public class ProductService {
         logger.info("Saving product to Firebase: {}", product.getName());
         firebaseService.saveProduct(product);
         return product;
+    }
+
+    public void updateAllProducts(String query) {
+        ProductDocument amazonProduct = priceApiService.fetchProductData("amazon", query);
+        if (amazonProduct != null) {
+            saveProduct(amazonProduct);
+            System.out.println("Successfully processed product data for: " + amazonProduct.getName());
+        } else {
+            System.out.println("Failed to fetch product data for query: " + query);
+        }
+
+        ProductDocument aliexpressProduct = priceApiService.fetchProductData("aliexpress", query);
+        if (aliexpressProduct != null) {
+            saveProduct(aliexpressProduct);
+            System.out.println("Successfully processed product data for: " + aliexpressProduct.getName());
+        } else {
+            System.out.println("Failed to fetch product data for query: " + query);
+        }
     }
 }

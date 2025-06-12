@@ -29,17 +29,7 @@ public class ScheduledTasksService {
         String exampleQuery = "iphone"; 
 
         logger.info("Attempting to update product data for query: {}", exampleQuery);
-        try {
-            com.example.price_comparator.model.ProductDocument productData = scrapingService.fetchProductData("amazon", exampleQuery);
-            if (productData != null) {
-                productService.saveProduct(productData);
-                logger.info("Successfully processed product data for: {}", productData.getName());
-            } else {
-                logger.warn("API returned null for query: {}", exampleQuery);
-            }
-        } catch (Exception e) {
-            logger.error("Error during scheduled update for query {}: {}", exampleQuery, e.getMessage(), e);
-        }
+        productService.updateAllProducts(exampleQuery);
 
         logger.info("Scheduled task: Hourly product update finished.");
     }
