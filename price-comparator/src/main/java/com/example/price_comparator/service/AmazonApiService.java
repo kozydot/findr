@@ -53,7 +53,7 @@ public class AmazonApiService implements RetailerApiService {
 
             JSONObject productJson = jsonResponse.getJSONObject("data");
             ProductDocument product = new ProductDocument();
-            product.setId(productJson.getString("asin"));
+            product.setId(productJson.optString("asin", null));
             product.setName(productJson.getString("product_title"));
             product.setPrice(productJson.optString("product_price", null));
             product.setOriginalPrice(productJson.optString("product_original_price", null));
@@ -64,7 +64,7 @@ public class AmazonApiService implements RetailerApiService {
             product.setProductInformation(productJson.getJSONObject("product_information").toMap().entrySet().stream().collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString())));
             product.setPhotos(productJson.getJSONArray("product_photos").toList().stream().map(Object::toString).collect(java.util.stream.Collectors.toList()));
             product.setImageUrl(productJson.getString("product_photo"));
-            product.setDescription(productJson.getString("product_description"));
+            product.setDescription(productJson.optString("product_description", null));
             product.setRating(Double.parseDouble(productJson.getString("product_star_rating")));
             product.setReviews(productJson.getInt("product_num_ratings"));
 
