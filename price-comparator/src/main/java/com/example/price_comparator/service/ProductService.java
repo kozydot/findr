@@ -6,8 +6,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
@@ -16,11 +19,13 @@ public class ProductService {
 
     private final FirebaseService firebaseService;
     private final PriceApiService priceApiService;
+    private final AmazonApiService amazonApiService;
 
     @Autowired
-    public ProductService(FirebaseService firebaseService, PriceApiService priceApiService) {
+    public ProductService(FirebaseService firebaseService, PriceApiService priceApiService, AmazonApiService amazonApiService) {
         this.firebaseService = firebaseService;
         this.priceApiService = priceApiService;
+        this.amazonApiService = amazonApiService;
     }
 
     public List<ProductDocument> getFeaturedProducts(int limit) {
@@ -36,7 +41,12 @@ public class ProductService {
 
     public Optional<ProductDocument> getProductById(String id) {
         logger.info("Fetching product by ID: {}", id);
-        return firebaseService.getProduct(id);
+        try {
+            return Optional.ofNullable(firebaseService.getProduct(id).get());
+        } catch (Exception e) {
+            logger.error("Error fetching product by ID: {}", id, e);
+            return Optional.empty();
+        }
     }
 
     public List<ProductDocument> getAllProducts() {
@@ -46,9 +56,14 @@ public class ProductService {
 
     public List<ProductDocument> searchProducts(String query) {
         logger.info("Searching products with query: {}", query);
-        // This would require a more complex query on Firebase, which is not straightforward.
-        // For now, we'll return an empty list.
-        return List.of();
+        List<ProductDocument> allProducts = firebaseService.getAllProducts();
+        if (query == null || query.trim().isEmpty()) {
+            return allProducts;
+        }
+        String lowerCaseQuery = query.toLowerCase();
+        return allProducts.stream()
+                .filter(product -> product.getName().toLowerCase().contains(lowerCaseQuery))
+                .collect(java.util.stream.Collectors.toList());
     }
 
     public List<String> getAmazonCategories() {
@@ -86,30 +101,52 @@ public class ProductService {
     }
 
     public void updateAllProducts(String query) {
-        logger.info("Fetching products from Amazon for query: {}", query);
-        List<ProductDocument> amazonProducts = priceApiService.fetchProductData("amazon", query);
-        if (amazonProducts != null && !amazonProducts.isEmpty()) {
-            for (ProductDocument product : amazonProducts) {
-                if (product != null && product.getName() != null) {
-                    saveProduct(product);
-                    logger.info("Successfully processed product data for: " + product.getName());
-                }
-            }
-        } else {
-            logger.error("Failed to fetch product data from Amazon for query: " + query);
+        logger.info("Updating all products for query: {}", query);
+        List<ProductDocument> productSummaries = priceApiService.fetchProductData("amazon", query);
+
+        if (productSummaries == null || productSummaries.isEmpty()) {
+            logger.warn("No product summaries found for query: {}", query);
+            return;
         }
 
-        logger.info("Fetching products from Aliexpress for query: {}", query);
-        List<ProductDocument> aliexpressProducts = priceApiService.fetchProductData("aliexpress", query);
-        if (aliexpressProducts != null && !aliexpressProducts.isEmpty()) {
-            for (ProductDocument product : aliexpressProducts) {
-                if (product != null && product.getName() != null) {
-                    saveProduct(product);
-                    logger.info("Successfully processed product data for: " + product.getName());
-                }
-            }
-        } else {
-            logger.error("Failed to fetch product data from Aliexpress for query: " + query);
-        }
+        List<CompletableFuture<Void>> futures = productSummaries.stream()
+                .filter(summary -> summary != null && summary.getId() != null)
+                .map(summary -> CompletableFuture.runAsync(() -> {
+                    try {
+                        Optional<ProductDocument> existingProductOpt = getProductById(summary.getId());
+                        long twentyFourHoursInMillis = 24 * 60 * 60 * 1000;
+
+                        if (existingProductOpt.isPresent()) {
+                            ProductDocument existingProduct = existingProductOpt.get();
+                            if (existingProduct.getLastChecked() != null &&
+                                (new Date().getTime() - existingProduct.getLastChecked().getTime()) < twentyFourHoursInMillis) {
+                                logger.info("Skipping recently checked product: {}", existingProduct.getName());
+                                return;
+                            }
+                            // Product exists, merge data
+                            existingProduct.setPrice(summary.getPrice());
+                            existingProduct.setRating(summary.getRating());
+                            existingProduct.setReviews(summary.getReviews());
+                            existingProduct.setLastChecked(new Date());
+                            saveProduct(existingProduct);
+                            logger.info("Updated product: {}", existingProduct.getName());
+                        } else {
+                            // Product does not exist, fetch full details and save
+                            ProductDocument fullProductDetails = amazonApiService.getProductDetails(summary.getId());
+                            if (fullProductDetails != null) {
+                                fullProductDetails.setLastChecked(new Date());
+                                saveProduct(fullProductDetails);
+                                logger.info("Saved new product: {}", fullProductDetails.getName());
+                            } else {
+                                logger.warn("Could not fetch full details for new product with ID: {}", summary.getId());
+                            }
+                        }
+                    } catch (Exception e) {
+                        logger.error("Error processing product with ID: {}", summary.getId(), e);
+                    }
+                }))
+                .collect(Collectors.toList());
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 }

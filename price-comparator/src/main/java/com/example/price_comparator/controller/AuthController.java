@@ -44,9 +44,4 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/test")
-    public ResponseEntity<?> test() {
-        authService.test();
-        return ResponseEntity.ok("Test data written to database");
-    }
 }

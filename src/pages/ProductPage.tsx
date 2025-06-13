@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { 
-  Share2, Star, ChevronRight, ArrowLeft, 
-  ShoppingCart, ExternalLink, Heart, Bell
+import { useProducts } from '../context/ProductContext';
+import {
+  Share2, Star, ChevronRight, ArrowLeft,
+  ShoppingCart, Heart, Bell
 } from 'lucide-react';
 import PriceHistoryChart from '../components/PriceHistoryChart';
 import PriceComparisonTable from '../components/PriceComparisonTable';
@@ -12,40 +13,31 @@ import { useAuth } from '../context/AuthContext';
 
 const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { getProductById, loading, error } = useProducts();
   const [activeTab, setActiveTab] = useState<'description' | 'specifications'>('description');
   const [isFavorite, setIsFavorite] = useState(false);
   const { isAuthenticated } = useAuth();
-  
-  useEffect(() => {
-    const fetchProduct = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(`/api/v1/products/${id}`);
-        if (response.ok) {
-          const data = await response.json();
-          setProduct(data);
-        } else {
-          setProduct(null);
-        }
-      } catch (error) {
-        console.error('Error fetching product:', error);
-        setProduct(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    if (id) {
-      fetchProduct();
-    }
-  }, [id]);
-  
-  if (isLoading) {
+
+  const product = id ? getProductById(id) : undefined;
+
+  if (loading) {
     return (
       <div className="container mx-auto px-4 py-10 min-h-screen flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-10 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4 text-red-600">Error Loading Product</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Link to="/" className="btn btn-primary">
+            Go Home
+          </Link>
+        </div>
       </div>
     );
   }

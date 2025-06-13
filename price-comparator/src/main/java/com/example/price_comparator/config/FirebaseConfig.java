@@ -19,17 +19,15 @@ import java.io.IOException;
 public class FirebaseConfig {
 
     @Value("${app.firebase.config-file-path}")
-    private String serviceAccountPath;
+    private Resource serviceAccountResource;
 
     @Value("${app.firebase.database-url}")
     private String databaseUrl;
 
     @Bean
     public FirebaseApp firebaseApp() throws IOException {
-        FileInputStream serviceAccount = new FileInputStream(serviceAccountPath);
-
         FirebaseOptions options = new FirebaseOptions.Builder()
-                .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                .setCredentials(GoogleCredentials.fromStream(serviceAccountResource.getInputStream()))
                 .setDatabaseUrl(databaseUrl)
                 .build();
 

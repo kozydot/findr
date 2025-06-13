@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { Product } from '../types';
 
 interface ProductContextType {
@@ -51,19 +51,19 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     fetchFeaturedProducts();
   }, []);
   
-  const getProductById = (id: string): Product | undefined => {
+  const getProductById = useCallback((id: string): Product | undefined => {
     return products.find(product => product.id === id);
-  };
+  }, [products]);
   
-  const searchProducts = (query: string): Product[] => {
+  const searchProducts = useCallback((query: string): Product[] => {
     if (!query) return products;
     
     const lowerQuery = query.toLowerCase();
-    return products.filter(product => 
+    return products.filter(product =>
       product.name.toLowerCase().includes(lowerQuery) ||
       (product.description && product.description.toLowerCase().includes(lowerQuery))
     );
-  };
+  }, [products]);
 
   return (
     <ProductContext.Provider value={{ products, featuredProducts, loading, error, getProductById, searchProducts }}>

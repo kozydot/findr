@@ -22,12 +22,12 @@ public class AmazonApiService implements RetailerApiService {
             .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
             .build();
 
-    private static final String API_KEY = "a545c6d02bmshbc13ceb1ab5e1e6p1c6fabjsnf07da51d1585";
+    private static final String API_KEY = "b043076b71mshcdd9e19935adc5bp122816jsn41791ba5f728";
     private static final String API_HOST = "real-time-amazon-data.p.rapidapi.com";
 
     public List<ProductDocument> searchProducts(String query) {
         try {
-            String url = "https://" + API_HOST + "/best-sellers?category=" + query + "&type=BEST_SELLERS&page=1&country=AE&language=en_AE";
+            String url = "https://" + API_HOST + "/search?query=" + query + "&page=1&country=AE&language=en_AE";
             Request request = new Request.Builder()
                     .url(url)
                     .get()
@@ -50,7 +50,7 @@ public class AmazonApiService implements RetailerApiService {
             }
 
             List<ProductDocument> products = new ArrayList<>();
-            JSONArray productsJson = jsonResponse.getJSONObject("data").getJSONArray("best_sellers");
+            JSONArray productsJson = jsonResponse.getJSONObject("data").getJSONArray("products");
             for (int i = 0; i < productsJson.length(); i++) {
                 JSONObject productJson = productsJson.getJSONObject(i);
                 ProductDocument product = new ProductDocument();
@@ -108,11 +108,11 @@ public class AmazonApiService implements RetailerApiService {
             product.setProductUrl(productJson.getString("product_url"));
             product.setAvailability(productJson.optString("product_availability", null));
             product.setAbout(productJson.getJSONArray("about_product").toList().stream().map(Object::toString).collect(java.util.stream.Collectors.toList()));
-            product.setProductInformation(productJson.getJSONObject("product_information").toMap().entrySet().stream().collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString())));
+            product.setProductInformation(productJson.getJSONObject("product_information").toMap().entrySet().stream().collect(java.util.stream.Collectors.toMap(entry -> entry.getKey().replace(".", "_").replace("/", "_").replace("#", "_").replace("$", "_").replace("[", "_").replace("]", "_"), e -> e.getValue().toString())));
             product.setPhotos(productJson.getJSONArray("product_photos").toList().stream().map(Object::toString).collect(java.util.stream.Collectors.toList()));
             product.setImageUrl(productJson.getString("product_photo"));
             product.setDescription(productJson.optString("product_description", null));
-            product.setRating(Double.parseDouble(productJson.getString("product_star_rating")));
+            product.setRating(productJson.optDouble("product_star_rating", 0.0));
             product.setReviews(productJson.getInt("product_num_ratings"));
 
             return product;

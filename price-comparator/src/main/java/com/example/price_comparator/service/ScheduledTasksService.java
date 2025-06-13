@@ -38,11 +38,26 @@ public class ScheduledTasksService {
             return;
         }
 
-        String category = "electronics";
-        logger.info("Attempting to update product data for category: {}", category);
-        productService.updateAllProducts(category);
+        List<String> categories = productService.getAmazonCategories();
+        if (categories.isEmpty()) {
+            logger.warn("No categories found to update.");
+            return;
+        }
+
+        for (String category : categories) {
+            try {
+                logger.info("Attempting to update product data for category: {}", category);
+                productService.updateAllProducts(category);
+                logger.info("Waiting for 10 seconds before next category update to avoid rate-limiting...");
+                TimeUnit.SECONDS.sleep(10);
+            } catch (InterruptedException e) {
+                logger.error("Scheduled task interrupted during wait", e);
+                Thread.currentThread().interrupt();
+            }
+        }
+        
         firebaseService.updateLastAmazonFetchTimestamp(currentTime);
 
-        logger.info("Scheduled task: Hourly product update finished.");
+        logger.info("Scheduled task: Hourly product update finished for all categories.");
     }
 }

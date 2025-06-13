@@ -4,6 +4,7 @@ import com.example.price_comparator.model.User;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.UserRecord;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,6 +13,7 @@ public class AuthService {
     private final FirebaseAuth firebaseAuth;
     private final FirebaseService firebaseService;
 
+    @Autowired
     public AuthService(FirebaseAuth firebaseAuth, FirebaseService firebaseService) {
         this.firebaseAuth = firebaseAuth;
         this.firebaseService = firebaseService;
@@ -21,15 +23,16 @@ public class AuthService {
         UserRecord.CreateRequest request = new UserRecord.CreateRequest()
                 .setEmail(user.getEmail())
                 .setPassword(user.getPassword())
-                .setDisplayName(user.getDisplayName())
-                .setDisabled(false);
+                .setDisplayName(user.getDisplayName());
 
         UserRecord userRecord = firebaseAuth.createUser(request);
+
         User newUser = new User();
         newUser.setUid(userRecord.getUid());
         newUser.setEmail(userRecord.getEmail());
         newUser.setDisplayName(userRecord.getDisplayName());
         firebaseService.saveUser(newUser);
+
         return userRecord;
     }
 
@@ -41,9 +44,5 @@ public class AuthService {
         // The frontend would then use this token to sign in with the Firebase client SDK.
         UserRecord userRecord = firebaseAuth.getUserByEmail(user.getEmail());
         return firebaseAuth.createCustomToken(userRecord.getUid());
-    }
-
-    public void test() {
-        firebaseService.test();
     }
 }

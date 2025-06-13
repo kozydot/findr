@@ -15,12 +15,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const [isAlertActive, setIsAlertActive] = useState(isProductInAlerts(product.id));
   
   const lowestPrice = Math.min(
-    ...product.retailers.map(retailer => retailer.currentPrice)
+    ...(product.retailers || []).map(retailer => retailer.currentPrice)
   );
   
-  const bestRetailer = product.retailers.find(
-    retailer => retailer.currentPrice === lowestPrice
-  );
+  const bestRetailer = isFinite(lowestPrice)
+    ? product.retailers.find(retailer => retailer.currentPrice === lowestPrice)
+    : undefined;
   
   const priceChange = (retailer: Retailer) => {
     const change = retailer.priceHistory[0].price - retailer.priceHistory[1].price;
@@ -56,13 +56,18 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </Link>
         
         {isAuthenticated && (
-          <button 
+          <button
             onClick={toggleAlert}
-            className={`absolute top-3 right-3 p-2 rounded-full 
-              ${isAlertActive 
-                ? 'bg-primary text-white' 
+            disabled={!isFinite(lowestPrice)}
+            className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${
+              isAlertActive
+                ? 'bg-primary text-white'
                 : 'bg-white/90 text-gray-600 hover:text-primary'
-              } shadow-sm transition-colors`}
+            } ${
+              !isFinite(lowestPrice)
+                ? 'cursor-not-allowed opacity-50'
+                : 'shadow-sm'
+            }`}
           >
             <Bookmark size={18} />
           </button>
@@ -93,21 +98,29 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </div>
         
         {/* Best price section */}
-        <div className="mb-4">
-          <div className="text-sm text-gray-500 mb-1">Best price from:</div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <img 
-                src={bestRetailer?.logo} 
-                alt={bestRetailer?.name}
-                className="h-5 mr-2" 
-              />
-              <span className="font-semibold text-secondary">{bestRetailer?.name}</span>
+        <div className="mb-4" style={{ minHeight: '52px' }}>
+          {isFinite(lowestPrice) && bestRetailer ? (
+            <>
+              <div className="text-sm text-gray-500 mb-1">Best price from:</div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <img
+                    src={bestRetailer.logo}
+                    alt={bestRetailer.name}
+                    className="h-5 mr-2"
+                  />
+                  <span className="font-semibold text-secondary">{bestRetailer.name}</span>
+                </div>
+                <div className="text-xl font-bold text-primary">
+                  {lowestPrice.toFixed(2)} AED
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center h-full">
+              <p className="text-sm text-gray-500">No price information available.</p>
             </div>
-            <div className="text-xl font-bold text-primary">
-              {lowestPrice.toFixed(2)} AED
-            </div>
-          </div>
+          )}
         </div>
         
         {/* Price comparison mini-table */}

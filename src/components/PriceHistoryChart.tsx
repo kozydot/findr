@@ -21,6 +21,14 @@ type TimeRange = '7days' | '1month' | '3months' | 'all';
 
 const PriceHistoryChart = ({ retailers, productName }: PriceHistoryChartProps) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('1month');
+
+  if (!retailers || retailers.length === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm p-5 flex items-center justify-center h-64">
+        <p className="text-gray-500">Price history is not available.</p>
+      </div>
+    );
+  }
   
   // Function to filter data based on selected time range
   const getFilteredData = () => {

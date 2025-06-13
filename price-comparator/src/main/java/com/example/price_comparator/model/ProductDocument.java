@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -29,4 +30,5 @@ public class ProductDocument {
     private List<String> photos;
     private List<RetailerInfo> retailers = new ArrayList<>();
     private List<SpecificationInfo> specifications;
+    private Date lastChecked;
 }

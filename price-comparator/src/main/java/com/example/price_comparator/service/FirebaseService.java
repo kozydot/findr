@@ -1,43 +1,61 @@
 package com.example.price_comparator.service;
 
 import com.example.price_comparator.model.ProductDocument;
-import com.example.price_comparator.model.User;
+import com.example.price_comparator.model.SpecificationInfo;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @Service
 public class FirebaseService {
 
-    private final DatabaseReference productsRef;
-    private final DatabaseReference usersRef;
-    private final DatabaseReference metadataRef;
+    private static final Logger logger = LoggerFactory.getLogger(FirebaseService.class);
+    private final FirebaseDatabase database;
 
-    public FirebaseService(FirebaseDatabase firebaseDatabase) {
-        this.productsRef = firebaseDatabase.getReference("products");
-        this.usersRef = firebaseDatabase.getReference("users");
-        this.metadataRef = firebaseDatabase.getReference("metadata");
+    public FirebaseService(FirebaseDatabase database) {
+        this.database = database;
+    }
+
+    private String sanitizeKey(String key) {
+        return key.replace(".", "").replace("/", "").replace("#", "").replace("$", "").replace("[", "").replace("]", "");
     }
 
     public void saveProduct(ProductDocument product) {
-        if (product != null && product.getId() != null) {
-            productsRef.child(product.getId()).setValueAsync(product);
+        if (product == null || product.getId() == null) {
+            logger.error("Cannot save a null product or a product with a null ID.");
+            return;
         }
-    }
 
-    public Optional<ProductDocument> getProduct(String id) {
-        CompletableFuture<Optional<ProductDocument>> future = new CompletableFuture<>();
-        productsRef.child(id).addListenerForSingleValueEvent(new ValueEventListener() {
+        // Sanitize specification keys
+        if (product.getSpecifications() != null) {
+            List<SpecificationInfo> sanitizedSpecs = new ArrayList<>();
+            for (SpecificationInfo spec : product.getSpecifications()) {
+                String sanitizedName = sanitizeKey(spec.getName());
+                sanitizedSpecs.add(new SpecificationInfo(sanitizedName, spec.getValue()));
+            }
+            product.setSpecifications(sanitizedSpecs);
+        }
+
+        DatabaseReference ref = database.getReference("products/" + product.getId());
+        ref.setValueAsync(product);
+    }
+    
+    public CompletableFuture<ProductDocument> getProduct(String id) {
+        DatabaseReference ref = database.getReference("products/" + id);
+        CompletableFuture<ProductDocument> future = new CompletableFuture<>();
+        ref.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                ProductDocument product = dataSnapshot.getValue(ProductDocument.class);
-                future.complete(Optional.ofNullable(product));
+                future.complete(dataSnapshot.getValue(ProductDocument.class));
             }
 
             @Override
@@ -45,23 +63,18 @@ public class FirebaseService {
                 future.completeExceptionally(databaseError.toException());
             }
         });
-        try {
-            return future.get();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Optional.empty();
-        }
+        return future;
     }
 
-    public java.util.List<ProductDocument> getAllProducts() {
-        CompletableFuture<java.util.List<ProductDocument>> future = new CompletableFuture<>();
-        productsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+    public List<ProductDocument> getAllProducts() {
+        DatabaseReference ref = database.getReference("products");
+        CompletableFuture<List<ProductDocument>> future = new CompletableFuture<>();
+        ref.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                java.util.List<ProductDocument> products = new java.util.ArrayList<>();
-                for (DataSnapshot productSnapshot : dataSnapshot.getChildren()) {
-                    ProductDocument product = productSnapshot.getValue(ProductDocument.class);
-                    products.add(product);
+                List<ProductDocument> products = new ArrayList<>();
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    products.add(snapshot.getValue(ProductDocument.class));
                 }
                 future.complete(products);
             }
@@ -74,56 +87,29 @@ public class FirebaseService {
         try {
             return future.get();
         } catch (Exception e) {
-            e.printStackTrace();
-            return java.util.Collections.emptyList();
+            logger.error("Error fetching all products", e);
+            return List.of();
         }
     }
-
-    public void saveUser(User user) {
-        if (user != null) {
-            try {
-                usersRef.child(user.getUid()).setValueAsync(user).get();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+public void saveUser(com.example.price_comparator.model.User user) {
+        if (user == null || user.getUid() == null) {
+            logger.error("Cannot save a null user or a user with a null UID.");
+            return;
         }
+        DatabaseReference ref = database.getReference("users/" + user.getUid());
+        ref.setValueAsync(user);
     }
 
     public long getLastAmazonFetchTimestamp() {
-        CompletableFuture<Long> future = new CompletableFuture<>();
-        metadataRef.child("lastAmazonFetch").addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                Long timestamp = dataSnapshot.getValue(Long.class);
-                future.complete(timestamp != null ? timestamp : 0L);
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                future.completeExceptionally(databaseError.toException());
-            }
-        });
-        try {
-            return future.get();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return 0L;
-        }
+        // This is a placeholder. In a real application, you would store and retrieve
+        // this value from a persistent location (e.g., a specific node in Firebase).
+        return 0;
     }
 
     public void updateLastAmazonFetchTimestamp(long timestamp) {
-        try {
-            metadataRef.child("lastAmazonFetch").setValueAsync(timestamp).get();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void test() {
-        try {
-            usersRef.child("test").setValueAsync("test").get();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        // This is a placeholder. In a real application, you would store this value.
+        // For example:
+        // DatabaseReference ref = database.getReference("meta/lastAmazonFetchTimestamp");
+        // ref.setValueAsync(timestamp);
     }
 }

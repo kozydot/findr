@@ -56,3 +56,5 @@ build/
 
 # Custom
 memory-bank/
+.roomodes
+docs
