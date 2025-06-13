@@ -25,7 +25,6 @@ public class ScheduledTasksService {
         this.firebaseService = firebaseService;
     }
 
-    @Scheduled(fixedRate = 3600000, initialDelay = 5000) // Run every hour, with an initial 5-second delay
     public void scheduleHourlyProductUpdate() {
         logger.info("Scheduled task: Starting hourly product update...");
 

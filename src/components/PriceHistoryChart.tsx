@@ -47,23 +47,25 @@ const PriceHistoryChart = ({ retailers, productName }: PriceHistoryChartProps) =
     const allPrices: Record<string, Record<string, number>> = {};
     
     retailers.forEach(retailer => {
-      retailer.priceHistory.forEach(entry => {
-        const entryDate = new Date(entry.date);
-        if (entryDate >= cutoffDate) {
-          const dateStr = entryDate.toISOString().split('T')[0];
-          
-          // Track prices by retailer
-          if (!allPrices[dateStr]) {
-            allPrices[dateStr] = {};
+      if (retailer.priceHistory) {
+        retailer.priceHistory.forEach(entry => {
+          const entryDate = new Date(entry.date);
+          if (entryDate >= cutoffDate) {
+            const dateStr = entryDate.toISOString().split('T')[0];
+            
+            // Track prices by retailer
+            if (!allPrices[dateStr]) {
+              allPrices[dateStr] = {};
+            }
+            allPrices[dateStr][retailer.name] = entry.price;
+            
+            // Track min price
+            if (!dateToMinPrice[dateStr] || entry.price < dateToMinPrice[dateStr]) {
+              dateToMinPrice[dateStr] = entry.price;
+            }
           }
-          allPrices[dateStr][retailer.name] = entry.price;
-          
-          // Track min price
-          if (!dateToMinPrice[dateStr] || entry.price < dateToMinPrice[dateStr]) {
-            dateToMinPrice[dateStr] = entry.price;
-          }
-        }
-      });
+        });
+      }
     });
     
     // Convert to chart data format
@@ -99,8 +101,8 @@ const PriceHistoryChart = ({ retailers, productName }: PriceHistoryChartProps) =
   };
   
   // Calculate lowest ever price
-  const lowestEverPrice = Math.min(...retailers.flatMap(r => 
-    r.priceHistory.map(entry => entry.price)
+  const lowestEverPrice = Math.min(...retailers.flatMap(r =>
+    r.priceHistory ? r.priceHistory.map(entry => entry.price) : []
   ));
   
   const formatDate = (date: string) => {

@@ -1,6 +1,10 @@
 package com.example.price_comparator.service;
 
+import com.example.price_comparator.dto.AliexpressMatch;
+import com.example.price_comparator.dto.ComparisonResult;
+import com.example.price_comparator.dto.PriceComparison;
 import com.example.price_comparator.model.ProductDocument;
+import com.example.price_comparator.model.RetailerInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,12 +24,14 @@ public class ProductService {
     private final FirebaseService firebaseService;
     private final PriceApiService priceApiService;
     private final AmazonApiService amazonApiService;
+    private final ProductMatchingService productMatchingService;
 
     @Autowired
-    public ProductService(FirebaseService firebaseService, PriceApiService priceApiService, AmazonApiService amazonApiService) {
+    public ProductService(FirebaseService firebaseService, PriceApiService priceApiService, AmazonApiService amazonApiService, ProductMatchingService productMatchingService) {
         this.firebaseService = firebaseService;
         this.priceApiService = priceApiService;
         this.amazonApiService = amazonApiService;
+        this.productMatchingService = productMatchingService;
     }
 
     public List<ProductDocument> getFeaturedProducts(int limit) {
@@ -41,12 +47,47 @@ public class ProductService {
 
     public Optional<ProductDocument> getProductById(String id) {
         logger.info("Fetching product by ID: {}", id);
-        try {
-            return Optional.ofNullable(firebaseService.getProduct(id).get());
-        } catch (Exception e) {
-            logger.error("Error fetching product by ID: {}", id, e);
-            return Optional.empty();
+        
+        // Always fetch fresh data from Amazon first to ensure we have the latest details.
+        ProductDocument product = amazonApiService.getProductDetails(id);
+
+        // If the Amazon API fails, fall back to the data in our database.
+        if (product == null) {
+            logger.warn("Could not fetch product details from Amazon for ID: {}. Falling back to database.", id);
+            try {
+                return Optional.ofNullable(firebaseService.getProduct(id).get());
+            } catch (Exception e) {
+                logger.error("Error fetching product by ID from Firebase: {}", id, e);
+                return Optional.empty();
+            }
         }
+
+        // Now, with the latest Amazon data, perform the comparison.
+        logger.info("Successfully fetched from Amazon. Proceeding with AliExpress comparison for: {}", product.getName());
+        ComparisonResult result = productMatchingService.findAndCompare(product);
+        
+        if (result.isMatchFound()) {
+            logger.info("AliExpress match found. Enriching product data.");
+            AliexpressMatch match = result.getAliexpressMatch();
+            PriceComparison priceInfo = result.getPriceComparison();
+
+            RetailerInfo aliexpressRetailer = new RetailerInfo();
+            aliexpressRetailer.setRetailerId("aliexpress");
+            aliexpressRetailer.setName(match.getShopName());
+            aliexpressRetailer.setLogo("https://upload.wikimedia.org/wikipedia/commons/3/3b/Aliexpress_logo.svg");
+            aliexpressRetailer.setProductUrl(match.getProductDetailUrl());
+            aliexpressRetailer.setCurrentPrice(priceInfo.getAliexpressPriceAed());
+            aliexpressRetailer.setInStock(true); // Assuming in stock if found
+
+            product.getRetailers().add(aliexpressRetailer);
+        } else {
+            logger.warn("No AliExpress match found for: {}", product.getName());
+        }
+
+        // Optionally save the enriched product back to the database
+        // saveProduct(product);
+
+        return Optional.of(product);
     }
 
     public List<ProductDocument> getAllProducts() {
@@ -79,26 +120,6 @@ public class ProductService {
         return product;
     }
 
-    public ProductDocument compareAndSaveProduct(String productId) {
-        Optional<ProductDocument> productOptional = getProductById(productId);
-        if (productOptional.isEmpty()) {
-            return null;
-        }
-
-        ProductDocument product = productOptional.get();
-        
-        ProductDocument amazonProduct = priceApiService.getProductDetails("amazon", productId);
-        if (amazonProduct != null) {
-            product.getRetailers().addAll(amazonProduct.getRetailers());
-        }
-
-        ProductDocument aliexpressProduct = priceApiService.getProductDetails("aliexpress", productId);
-        if (aliexpressProduct != null) {
-            product.getRetailers().addAll(aliexpressProduct.getRetailers());
-        }
-
-        return saveProduct(product);
-    }
 
     public void updateAllProducts(String query) {
         logger.info("Updating all products for query: {}", query);
@@ -125,6 +146,7 @@ public class ProductService {
                             }
                             // Product exists, merge data
                             existingProduct.setPrice(summary.getPrice());
+                            existingProduct.setCurrency(summary.getCurrency());
                             existingProduct.setRating(summary.getRating());
                             existingProduct.setReviews(summary.getReviews());
                             existingProduct.setLastChecked(new Date());

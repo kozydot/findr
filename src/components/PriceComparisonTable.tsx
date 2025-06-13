@@ -6,6 +6,15 @@ interface PriceComparisonTableProps {
 }
 
 const PriceComparisonTable = ({ retailers }: PriceComparisonTableProps) => {
+  if (!retailers || retailers.length === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm p-5 text-center">
+        <h3 className="text-xl font-semibold text-secondary mb-2">Price Comparison</h3>
+        <p className="text-gray-500">No retailer information available for this product.</p>
+      </div>
+    );
+  }
+
   // Sort retailers by price (lowest first)
   const sortedRetailers = [...retailers].sort((a, b) => a.currentPrice - b.currentPrice);
   
@@ -14,7 +23,7 @@ const PriceComparisonTable = ({ retailers }: PriceComparisonTableProps) => {
   
   // Calculate price change
   const getPriceChange = (retailer: Retailer) => {
-    if (retailer.priceHistory.length < 2) return 0;
+    if (!retailer.priceHistory || retailer.priceHistory.length < 2) return 0;
     return retailer.priceHistory[0].price - retailer.priceHistory[1].price;
   };
   
@@ -53,13 +62,13 @@ const PriceComparisonTable = ({ retailers }: PriceComparisonTableProps) => {
               const priceChange = getPriceChange(retailer);
               
               return (
-                <tr key={retailer.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <img 
-                        src={retailer.logo} 
+                <tr key={retailer.retailerId} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center min-w-max">
+                      <img
+                        src={retailer.logo}
                         alt={retailer.name}
-                        className="h-6 mr-3" 
+                        className="h-6 mr-3"
                       />
                       <span className="font-medium">{retailer.name}</span>
                     </div>

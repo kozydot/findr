@@ -1,28 +1,32 @@
 package com.example.price_comparator.service;
 
 import com.example.price_comparator.model.ProductDocument;
+import com.example.price_comparator.model.RetailerInfo;
+import com.example.price_comparator.model.SpecificationInfo;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 public class AmazonApiService implements RetailerApiService {
 
     private final OkHttpClient client = new OkHttpClient.Builder()
-            .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-            .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
             .build();
 
-    private static final String API_KEY = "b043076b71mshcdd9e19935adc5bp122816jsn41791ba5f728";
+    private static final String API_KEY = "b1aec85babmsh6428821d9bebf86p1df2e5jsnb037ea881482";
     private static final String API_HOST = "real-time-amazon-data.p.rapidapi.com";
 
     public List<ProductDocument> searchProducts(String query) {
@@ -56,24 +60,44 @@ public class AmazonApiService implements RetailerApiService {
                 ProductDocument product = new ProductDocument();
                 product.setId(productJson.optString("asin", null));
                 product.setName(productJson.optString("product_title", null));
-                product.setPrice(productJson.optString("product_price", null));
-                product.setOriginalPrice(null); // Not available in this response
-                product.setCurrency(jsonResponse.getJSONObject("parameters").optString("country", null));
                 product.setProductUrl(productJson.optString("product_url", null));
-                product.setAvailability(null); // Not available in this response
                 product.setImageUrl(productJson.optString("product_photo", null));
                 product.setRating(productJson.optDouble("product_star_rating", 0.0));
                 product.setReviews(productJson.optInt("product_num_ratings", 0));
+                product.setCurrency(jsonResponse.getJSONObject("parameters").optString("country", null));
+
+                String priceString = productJson.optString("product_price", null);
+                if (priceString != null && !priceString.isEmpty()) {
+                    try {
+                        RetailerInfo amazonRetailer = new RetailerInfo();
+                        amazonRetailer.setRetailerId("amazon");
+                        amazonRetailer.setName("Amazon.ae");
+                        amazonRetailer.setLogo("https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg");
+                        amazonRetailer.setProductUrl(product.getProductUrl());
+                        
+                        String priceDigits = priceString.replaceAll("[^\\d.]", "");
+                        amazonRetailer.setCurrentPrice(Double.parseDouble(priceDigits));
+                        
+                        amazonRetailer.setInStock(true); 
+                        
+                        product.getRetailers().add(amazonRetailer);
+                        product.setPrice(priceString);
+
+                    } catch (NumberFormatException e) {
+                        System.err.println("Could not parse price for product " + product.getId() + ": " + priceString);
+                    }
+                }
                 products.add(product);
             }
             return products;
 
         } catch (IOException e) {
-            System.err.println("Error getting product details: " + e.getMessage());
+            System.err.println("Error searching Amazon products: " + e.getMessage());
             return new ArrayList<>();
         }
     }
 
+    @Cacheable("amazon-product-details")
     public ProductDocument getProductDetails(String asin) {
         try {
             String url = "https://" + API_HOST + "/product-details?asin=" + asin + "&country=AE";
@@ -94,7 +118,7 @@ public class AmazonApiService implements RetailerApiService {
             JSONObject jsonResponse = new JSONObject(responseBody);
 
             if (!jsonResponse.getString("status").equals("OK")) {
-                System.err.println("API returned an error: " + jsonResponse.getJSONObject("error").getString("message"));
+                System.err.println("API returned an error: " + jsonResponse.toString());
                 return null;
             }
 
@@ -102,23 +126,76 @@ public class AmazonApiService implements RetailerApiService {
             ProductDocument product = new ProductDocument();
             product.setId(productJson.optString("asin", null));
             product.setName(productJson.getString("product_title"));
-            product.setPrice(productJson.optString("product_price", null));
-            product.setOriginalPrice(productJson.optString("product_original_price", null));
-            product.setCurrency(productJson.getString("currency"));
             product.setProductUrl(productJson.getString("product_url"));
-            product.setAvailability(productJson.optString("product_availability", null));
-            product.setAbout(productJson.getJSONArray("about_product").toList().stream().map(Object::toString).collect(java.util.stream.Collectors.toList()));
-            product.setProductInformation(productJson.getJSONObject("product_information").toMap().entrySet().stream().collect(java.util.stream.Collectors.toMap(entry -> entry.getKey().replace(".", "_").replace("/", "_").replace("#", "_").replace("$", "_").replace("[", "_").replace("]", "_"), e -> e.getValue().toString())));
-            product.setPhotos(productJson.getJSONArray("product_photos").toList().stream().map(Object::toString).collect(java.util.stream.Collectors.toList()));
             product.setImageUrl(productJson.getString("product_photo"));
             product.setDescription(productJson.optString("product_description", null));
             product.setRating(productJson.optDouble("product_star_rating", 0.0));
             product.setReviews(productJson.getInt("product_num_ratings"));
+            product.setAbout(productJson.getJSONArray("about_product").toList().stream().map(Object::toString).collect(Collectors.toList()));
+            
+            JSONObject productInfoJson = productJson.optJSONObject("product_information");
+            if (productInfoJson != null) {
+                List<SpecificationInfo> specifications = new ArrayList<>();
+                for (String key : productInfoJson.keySet()) {
+                    Object value = productInfoJson.get(key);
+                    specifications.add(new SpecificationInfo(key, value.toString()));
+                }
+                product.setSpecifications(specifications);
+
+                // Attempt to extract brand from specifications
+                String brand = specifications.stream()
+                    .filter(s -> "brand".equalsIgnoreCase(s.getName()))
+                    .map(SpecificationInfo::getValue)
+                    .findFirst()
+                    .orElse(null);
+
+                if (brand == null) {
+                    // Fallback: attempt to extract brand from the product title
+                    String title = product.getName().toLowerCase();
+                    if (title.contains("samsung")) brand = "Samsung";
+                    else if (title.contains("apple")) brand = "Apple";
+                    else if (title.contains("sony")) brand = "Sony";
+                    else if (title.contains("lg")) brand = "LG";
+                    else if (title.contains("dell")) brand = "Dell";
+                    else if (title.contains("hp")) brand = "HP";
+                    else if (title.contains("lenovo")) brand = "Lenovo";
+                    else if (title.contains("redragon")) brand = "Redragon";
+                }
+                product.setBrand(brand);
+            }
+
+            product.setPhotos(productJson.getJSONArray("product_photos").toList().stream().map(Object::toString).collect(Collectors.toList()));
+
+            String priceString = productJson.optString("product_price", null);
+            if (priceString != null && !priceString.isEmpty()) {
+                try {
+                    RetailerInfo amazonRetailer = new RetailerInfo();
+                    amazonRetailer.setRetailerId("amazon");
+                    amazonRetailer.setName("Amazon.ae");
+                    amazonRetailer.setLogo("https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg");
+                    amazonRetailer.setProductUrl(product.getProductUrl());
+
+                    String priceDigits = priceString.replaceAll("[^\\d.]", "");
+                    amazonRetailer.setCurrentPrice(Double.parseDouble(priceDigits));
+
+                    String availability = productJson.optString("product_availability", "");
+                    amazonRetailer.setInStock(availability != null && availability.toLowerCase().contains("in stock"));
+
+                    product.getRetailers().add(amazonRetailer);
+                    
+                    product.setPrice(priceString);
+                    product.setOriginalPrice(productJson.optString("product_original_price", null));
+                    product.setCurrency(productJson.getString("currency"));
+
+                } catch (NumberFormatException e) {
+                    System.err.println("Could not parse price for product " + product.getId() + ": " + priceString);
+                }
+            }
 
             return product;
 
         } catch (IOException e) {
-            System.err.println("Error getting product details: " + e.getMessage());
+            System.err.println("Error getting Amazon product details: " + e.getMessage());
             return null;
         }
     }

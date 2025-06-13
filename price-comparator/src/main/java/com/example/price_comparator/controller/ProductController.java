@@ -1,5 +1,6 @@
 package com.example.price_comparator.controller;
 
+import com.example.price_comparator.dto.ComparisonResult;
 import com.example.price_comparator.model.ProductDocument;
 import com.example.price_comparator.service.ProductService;
 // Import ScrapingService if you want to add a manual trigger endpoint
@@ -75,15 +76,6 @@ public class ProductController {
         return ResponseEntity.ok(categories);
     }
 
-    @GetMapping("/compare/{productId}")
-    public ResponseEntity<ProductDocument> comparePrices(@PathVariable String productId) {
-        logger.info("Received request to compare prices for product with ID: {}", productId);
-        ProductDocument product = productService.compareAndSaveProduct(productId);
-        if (product != null) {
-            return ResponseEntity.ok(product);
-        }
-        return ResponseEntity.notFound().build();
-    }
 
     // Example endpoint to manually trigger a scrape for a specific Noon URL (for testing)
     // This is optional and might be removed or secured in a production environment.

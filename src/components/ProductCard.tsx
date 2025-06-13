@@ -14,18 +14,13 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const { addAlert, removeAlert, isProductInAlerts } = useAlerts();
   const [isAlertActive, setIsAlertActive] = useState(isProductInAlerts(product.id));
   
-  const lowestPrice = Math.min(
-    ...(product.retailers || []).map(retailer => retailer.currentPrice)
-  );
-  
-  const bestRetailer = isFinite(lowestPrice)
-    ? product.retailers.find(retailer => retailer.currentPrice === lowestPrice)
+  const lowestPrice = product.retailers && product.retailers.length > 0 
+    ? Math.min(...product.retailers.map(r => r.currentPrice))
+    : (product.price ? parseFloat(String(product.price).replace(/[^\\d.]/g, '')) : Infinity);
+
+  const bestRetailer = product.retailers && product.retailers.length > 0
+    ? product.retailers.find(r => r.currentPrice === lowestPrice)
     : undefined;
-  
-  const priceChange = (retailer: Retailer) => {
-    const change = retailer.priceHistory[0].price - retailer.priceHistory[1].price;
-    return change;
-  };
   
   const toggleAlert = () => {
     if (isAlertActive) {
@@ -99,7 +94,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
         
         {/* Best price section */}
         <div className="mb-4" style={{ minHeight: '52px' }}>
-          {isFinite(lowestPrice) && bestRetailer ? (
+        {isFinite(lowestPrice) ? (
+          bestRetailer ? (
             <>
               <div className="text-sm text-gray-500 mb-1">Best price from:</div>
               <div className="flex items-center justify-between">
@@ -112,49 +108,23 @@ const ProductCard = ({ product }: ProductCardProps) => {
                   <span className="font-semibold text-secondary">{bestRetailer.name}</span>
                 </div>
                 <div className="text-xl font-bold text-primary">
-                  {lowestPrice.toFixed(2)} AED
+                  {lowestPrice.toFixed(2)} {product.currency}
                 </div>
               </div>
             </>
           ) : (
-            <div className="flex items-center h-full">
-              <p className="text-sm text-gray-500">No price information available.</p>
-            </div>
-          )}
-        </div>
-        
-        {/* Price comparison mini-table */}
-        <div className="border-t border-gray-100 pt-3 space-y-2">
-          {product.retailers.map((retailer) => (
-            <div key={retailer.id} className="flex items-center justify-between text-sm">
-              <div className="flex items-center">
-                <img 
-                  src={retailer.logo} 
-                  alt={retailer.name}
-                  className="h-4 mr-2" 
-                />
-                <span className="text-gray-600">{retailer.name}</span>
+            <>
+              <div className="text-sm text-gray-500 mb-1">Price:</div>
+              <div className="text-xl font-bold text-primary">
+                {lowestPrice.toFixed(2)} {product.currency}
               </div>
-              <div className="flex items-center">
-                <span className={`font-medium ${retailer.currentPrice === lowestPrice ? 'text-success' : 'text-gray-700'}`}>
-                  {retailer.currentPrice.toFixed(2)} AED
-                </span>
-                
-                {priceChange(retailer) !== 0 && (
-                  <span className={`ml-2 flex items-center text-xs ${
-                    priceChange(retailer) < 0 ? 'text-success' : 'text-error'
-                  }`}>
-                    {priceChange(retailer) < 0 ? (
-                      <ArrowDown size={12} className="mr-0.5" />
-                    ) : (
-                      <ArrowUp size={12} className="mr-0.5" />
-                    )}
-                    {Math.abs(priceChange(retailer)).toFixed(2)}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
+            </>
+          )
+        ) : (
+          <div className="flex items-center h-full">
+            <p className="text-sm text-gray-500">No price information available.</p>
+          </div>
+        )}
         </div>
         
         {/* View details link */}

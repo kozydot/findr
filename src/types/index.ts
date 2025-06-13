@@ -4,7 +4,7 @@ export interface PriceHistoryEntry {
 }
 
 export interface Retailer {
-  id: string;
+  retailerId: string;
   name: string;
   logo: string;
   currentPrice: number;
@@ -28,7 +28,10 @@ export interface Product {
   rating: number;
   reviews: number;
   retailers: Retailer[];
-  specifications: Specification[];
+  specifications?: Specification[];
+  productInformation?: { [key: string]: string };
+  price?: string;
+  currency?: string;
 }
 
 export interface Alert {
