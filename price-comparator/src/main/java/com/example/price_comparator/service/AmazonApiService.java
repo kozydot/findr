@@ -26,7 +26,7 @@ public class AmazonApiService implements RetailerApiService {
             .readTimeout(60, TimeUnit.SECONDS)
             .build();
 
-    private static final String API_KEY = "b1aec85babmsh6428821d9bebf86p1df2e5jsnb037ea881482";
+    private static final String API_KEY = "d336a2ff15msh500feeae2fac677p1c7019jsn3eab45d6f3df";
     private static final String API_HOST = "real-time-amazon-data.p.rapidapi.com";
 
     public List<ProductDocument> searchProducts(String query) {

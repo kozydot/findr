@@ -9,32 +9,22 @@ import java.util.List;
 public class PriceApiService {
 
     private final AmazonApiService amazonApiService;
-    private final AliexpressApiService aliexpressApiService;
 
-    public PriceApiService(AmazonApiService amazonApiService, AliexpressApiService aliexpressApiService) {
+    public PriceApiService(AmazonApiService amazonApiService) {
         this.amazonApiService = amazonApiService;
-        this.aliexpressApiService = aliexpressApiService;
     }
 
     public List<ProductDocument> fetchProductData(String retailer, String query) {
-        switch (retailer.toLowerCase()) {
-            case "amazon":
-                return amazonApiService.searchProducts(query);
-            case "aliexpress":
-                return aliexpressApiService.searchProducts(query);
-            default:
-                return null;
+        if ("amazon".equalsIgnoreCase(retailer)) {
+            return amazonApiService.searchProducts(query);
         }
+        return null;
     }
 
     public ProductDocument getProductDetails(String retailer, String id) {
-        switch (retailer.toLowerCase()) {
-            case "amazon":
-                return amazonApiService.getProductDetails(id);
-            case "aliexpress":
-                return aliexpressApiService.getProductDetails(id);
-            default:
-                return null;
+        if ("amazon".equalsIgnoreCase(retailer)) {
+            return amazonApiService.getProductDetails(id);
         }
+        return null;
     }
 }

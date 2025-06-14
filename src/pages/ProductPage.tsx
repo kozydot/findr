@@ -130,201 +130,195 @@ const ProductPage = () => {
         Back to search results
       </Link>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl shadow-sm p-6 flex items-center justify-center">
-            <img 
-              src={product.imageUrl} 
-              alt={product.name}
-              className="max-w-full max-h-80 object-contain" 
-            />
-          </div>
-          
-          <div className="flex justify-center mt-4 space-x-2">
-            {[1, 2, 3].map((_, index) => (
-              <button 
-                key={index}
-                className={`w-16 h-16 border rounded-lg overflow-hidden ${index === 0 ? 'border-primary' : 'border-gray-200'}`}
-              >
-                <img 
-                  src={product.imageUrl} 
-                  alt={`${product.name} - view ${index + 1}`}
-                  className="w-full h-full object-contain" 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+        {/* Main Content */}
+        <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <div className="bg-white rounded-xl shadow-sm p-6 flex items-center justify-center">
+                <img
+                  src={product.imageUrl}
+                  alt={product.name}
+                  className="max-w-full max-h-80 object-contain"
                 />
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        <div className="lg:col-span-1">
-          <h1 className="text-2xl md:text-3xl font-bold text-secondary mb-4">
-            {product.name}
-          </h1>
-          
-          <div className="flex items-center mb-4">
-            <div className="flex items-center text-yellow-500">
-              {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  size={16}
-                  fill={i < Math.floor(product.rating) ? "currentColor" : "none"}
-                  stroke={i < Math.floor(product.rating) ? "currentColor" : "currentColor"}
-                  className="mr-0.5"
-                />
-              ))}
+              </div>
+              <div className="flex justify-center mt-4 space-x-2">
+                {[1, 2, 3].map((_, index) => (
+                  <button
+                    key={index}
+                    className={`w-16 h-16 border rounded-lg overflow-hidden ${index === 0 ? 'border-primary' : 'border-gray-200'}`}
+                  >
+                    <img
+                      src={product.imageUrl}
+                      alt={`${product.name} - view ${index + 1}`}
+                      className="w-full h-full object-contain"
+                    />
+                  </button>
+                ))}
+              </div>
             </div>
-            <span className="ml-2 text-sm text-gray-600">{product.rating} ({product.reviews} reviews)</span>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-secondary mb-4">
+                {product.name}
+              </h1>
+              <div className="flex items-center mb-4">
+                <div className="flex items-center text-yellow-500">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      size={16}
+                      fill={i < Math.floor(product.rating) ? "currentColor" : "none"}
+                      stroke="currentColor"
+                      className="mr-0.5"
+                    />
+                  ))}
+                </div>
+                <span className="ml-2 text-sm text-gray-600">{product.rating} ({product.reviews} reviews)</span>
+              </div>
+              {hasRetailers && bestRetailer && (
+                <>
+                  <div className="mb-6">
+                    <div className="text-sm text-gray-500 mb-1">Best price from:</div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <span className="font-medium text-secondary">{bestRetailer.name}</span>
+                      </div>
+                      <div className="text-2xl font-bold text-primary">
+                        {lowestPrice.toFixed(2)} AED
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex space-x-3 mb-6">
+                    <a
+                      href={bestRetailer.productUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary flex-grow flex items-center justify-center"
+                    >
+                      <ShoppingCart size={18} className="mr-2" />
+                      Buy Now
+                    </a>
+                    <button
+                      onClick={handleShareClick}
+                      className="btn bg-gray-100 text-secondary hover:bg-gray-200 p-3"
+                      aria-label="Share"
+                    >
+                      <Share2 size={18} />
+                    </button>
+                    {isAuthenticated && (
+                      <button
+                        onClick={toggleFavorite}
+                        className={`btn p-3 ${
+                          isFavorite
+                            ? 'bg-primary/10 text-primary hover:bg-primary/20'
+                            : 'bg-gray-100 text-secondary hover:bg-gray-200'
+                        }`}
+                        aria-label="Add to favorites"
+                      >
+                        <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
-          {hasRetailers && bestRetailer && (
-            <>
-              <div className="mb-6">
-                <div className="text-sm text-gray-500 mb-1">Best price from:</div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <img 
-                      src={bestRetailer.logo} 
-                      alt={bestRetailer.name}
-                      className="h-6 mr-2" 
-                    />
-                    <span className="font-medium text-secondary">{bestRetailer.name}</span>
-                  </div>
-                  <div className="text-2xl font-bold text-primary">
-                    {lowestPrice.toFixed(2)} AED
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex space-x-3 mb-6">
-                <a 
-                  href={bestRetailer.productUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="btn btn-primary flex-grow flex items-center justify-center"
+          <div className="mt-10">
+            <div className="border-b border-gray-200 mb-4">
+              <div className="flex">
+                <button
+                  onClick={() => setActiveTab('description')}
+                  className={`py-3 px-4 text-sm font-medium border-b-2 ${
+                    activeTab === 'description'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
                 >
-                  <ShoppingCart size={18} className="mr-2" />
-                  Buy Now
-                </a>
-                
-                <button 
-                  onClick={handleShareClick}
-                  className="btn bg-gray-100 text-secondary hover:bg-gray-200 p-3"
-                  aria-label="Share"
-                >
-                  <Share2 size={18} />
+                  Description
                 </button>
-                
-                {isAuthenticated && (
-                  <button 
-                    onClick={toggleFavorite}
-                    className={`btn p-3 ${
-                      isFavorite 
-                        ? 'bg-primary/10 text-primary hover:bg-primary/20' 
-                        : 'bg-gray-100 text-secondary hover:bg-gray-200'
-                    }`}
-                    aria-label="Add to favorites"
-                  >
-                    <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
-                  </button>
-                )}
+                <button
+                  onClick={() => setActiveTab('specifications')}
+                  className={`py-3 px-4 text-sm font-medium border-b-2 ${
+                    activeTab === 'specifications'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Specifications
+                </button>
               </div>
-            </>
-          )}
-          
-        </div>
-        
-        <div className="lg:col-span-1">
-          {hasRetailers ? (
-            <>
-              {isAuthenticated ? (
-                <AlertForm product={product} />
+            </div>
+            <div className="text-gray-600">
+              {activeTab === 'description' ? (
+                <div className="prose prose-sm max-w-none">
+                  <p>{product.description}</p>
+                </div>
               ) : (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-4">
-                  <div className="text-center p-4">
-                    <Bell size={24} className="mx-auto text-primary mb-3" />
-                    <h3 className="font-semibold text-lg mb-2">Get Price Drop Alerts</h3>
-                    <p className="text-gray-600 text-sm mb-4">
-                      Sign in to set up price alerts and we'll notify you when prices drop.
-                    </p>
-                    <Link to="/login" className="btn btn-primary text-sm">
-                      Log In to Set Alert
-                    </Link>
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="divide-y divide-gray-200">
+                    {product.productInformation && Object.keys(product.productInformation).length > 0 ? (
+                      Object.entries(product.productInformation).map(([key, value]) => (
+                        <div key={key} className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                          <div className="text-sm font-medium text-gray-500">{key}</div>
+                          <div className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{value}</div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-5 sm:px-6">
+                        <p className="text-sm text-gray-500">No specifications available for this product.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
-              
-              <div className="mt-6">
-                <PriceComparisonTable retailers={product.retailers} />
-              </div>
-            </>
-          ) : (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
-              <h3 className="font-semibold text-lg mb-2">No Price Data</h3>
-              <p className="text-gray-600 text-sm">
-                There is currently no price comparison data available for this product.
-              </p>
+            </div>
+          </div>
+          
+          {hasRetailers && (
+            <div className="mt-10">
+              <PriceHistoryChart retailers={product.retailers} productName={product.name} />
             </div>
           )}
         </div>
-      </div>
 
-      <div className="mt-10">
-        <div className="border-b border-gray-200 mb-4">
-          <div className="flex">
-            <button
-              onClick={() => setActiveTab('description')}
-              className={`py-3 px-4 text-sm font-medium border-b-2 ${
-                activeTab === 'description'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Description
-            </button>
-            <button
-              onClick={() => setActiveTab('specifications')}
-              className={`py-3 px-4 text-sm font-medium border-b-2 ${
-                activeTab === 'specifications'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Specifications
-            </button>
-          </div>
-        </div>
-        
-        <div className="text-gray-600">
-          {activeTab === 'description' ? (
-            <div className="prose prose-sm max-w-none">
-              <p>{product.description}</p>
-            </div>
-          ) : (
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="divide-y divide-gray-200">
-                {product.productInformation && Object.keys(product.productInformation).length > 0 ? (
-                  Object.entries(product.productInformation).map(([key, value]) => (
-                    <div key={key} className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <div className="text-sm font-medium text-gray-500">{key}</div>
-                      <div className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{value}</div>
-                    </div>
-                  ))
+        {/* Sidebar */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-6">
+            {hasRetailers ? (
+              <>
+                {isAuthenticated ? (
+                  <AlertForm product={product} />
                 ) : (
-                  <div className="px-4 py-5 sm:px-6">
-                    <p className="text-sm text-gray-500">No specifications available for this product.</p>
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-4">
+                    <div className="text-center p-4">
+                      <Bell size={24} className="mx-auto text-primary mb-3" />
+                      <h3 className="font-semibold text-lg mb-2">Get Price Drop Alerts</h3>
+                      <p className="text-gray-600 text-sm mb-4">
+                        Sign in to set up price alerts and we'll notify you when prices drop.
+                      </p>
+                      <Link to="/login" className="btn btn-primary text-sm">
+                        Log In to Set Alert
+                      </Link>
+                    </div>
                   </div>
                 )}
+                
+                <div className="mt-6">
+                  <PriceComparisonTable retailers={product.retailers} />
+                </div>
+              </>
+            ) : (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
+                <h3 className="font-semibold text-lg mb-2">No Price Data</h3>
+                <p className="text-gray-600 text-sm">
+                  There is currently no price comparison data available for this product.
+                </p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
-      
-      {hasRetailers && (
-        <div className="mt-10">
-          <PriceHistoryChart retailers={product.retailers} productName={product.name} />
-        </div>
-      )}
     </div>
   );
 };

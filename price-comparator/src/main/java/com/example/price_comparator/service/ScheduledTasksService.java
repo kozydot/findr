@@ -3,7 +3,6 @@ package com.example.price_comparator.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -46,7 +45,7 @@ public class ScheduledTasksService {
         for (String category : categories) {
             try {
                 logger.info("Attempting to update product data for category: {}", category);
-                productService.updateAllProducts(category);
+                // productService.updateAllProducts(category); // This method was removed
                 logger.info("Waiting for 10 seconds before next category update to avoid rate-limiting...");
                 TimeUnit.SECONDS.sleep(10);
             } catch (InterruptedException e) {

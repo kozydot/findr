@@ -1,8 +1,5 @@
 package com.example.price_comparator.service;
 
-import com.example.price_comparator.dto.AliexpressMatch;
-import com.example.price_comparator.dto.ComparisonResult;
-import com.example.price_comparator.dto.PriceComparison;
 import com.example.price_comparator.model.ProductDocument;
 import com.example.price_comparator.model.RetailerInfo;
 import org.slf4j.Logger;
@@ -22,16 +19,14 @@ public class ProductService {
     private static final Logger logger = LoggerFactory.getLogger(ProductService.class);
 
     private final FirebaseService firebaseService;
-    private final PriceApiService priceApiService;
     private final AmazonApiService amazonApiService;
-    private final ProductMatchingService productMatchingService;
+    private final ShoppingService shoppingService;
 
     @Autowired
-    public ProductService(FirebaseService firebaseService, PriceApiService priceApiService, AmazonApiService amazonApiService, ProductMatchingService productMatchingService) {
+    public ProductService(FirebaseService firebaseService, AmazonApiService amazonApiService, ShoppingService shoppingService) {
         this.firebaseService = firebaseService;
-        this.priceApiService = priceApiService;
         this.amazonApiService = amazonApiService;
-        this.productMatchingService = productMatchingService;
+        this.shoppingService = shoppingService;
     }
 
     public List<ProductDocument> getFeaturedProducts(int limit) {
@@ -42,75 +37,102 @@ public class ProductService {
 
     public List<ProductDocument> getTrendingProducts() {
         logger.info("Fetching trending products");
-        return priceApiService.fetchProductData("amazon", "electronics");
+        // This is a placeholder, you might want to implement a real trending logic
+        return firebaseService.getAllProducts().subList(0, Math.min(10, firebaseService.getAllProducts().size()));
     }
 
     public Optional<ProductDocument> getProductById(String id) {
         logger.info("Fetching product by ID: {}", id);
         
-        // Always fetch fresh data from Amazon first to ensure we have the latest details.
         ProductDocument product = amazonApiService.getProductDetails(id);
 
-        // If the Amazon API fails, fall back to the data in our database.
         if (product == null) {
             logger.warn("Could not fetch product details from Amazon for ID: {}. Falling back to database.", id);
             try {
-                return Optional.ofNullable(firebaseService.getProduct(id).get());
+                product = firebaseService.getProduct(id).get();
+                 if (product == null) {
+                    logger.error("Product with ID {} not found in Firebase either.", id);
+                    return Optional.empty();
+                }
             } catch (Exception e) {
                 logger.error("Error fetching product by ID from Firebase: {}", id, e);
                 return Optional.empty();
             }
         }
 
-        // Now, with the latest Amazon data, perform the comparison.
-        logger.info("Successfully fetched from Amazon. Proceeding with AliExpress comparison for: {}", product.getName());
-        ComparisonResult result = productMatchingService.findAndCompare(product);
-        
-        if (result.isMatchFound()) {
-            logger.info("AliExpress match found. Enriching product data.");
-            AliexpressMatch match = result.getAliexpressMatch();
-            PriceComparison priceInfo = result.getPriceComparison();
+        // Only perform comparison if there are no other retailers listed
+        if (product.getRetailers().size() <= 1) {
+            logger.info("Proceeding with Shopping comparison for: {}", product.getName());
+            List<RetailerInfo> offers = shoppingService.findOffers(product.getName());
+            if (!offers.isEmpty()) {
+                logger.info("Found {} offers on Shopping for: {}", offers.size(), product.getName());
+                
+                // Get existing URLs to prevent duplicates
+                // Combine existing and new offers
+                List<RetailerInfo> allOffers = new java.util.ArrayList<>(product.getRetailers());
+                allOffers.addAll(offers);
 
-            RetailerInfo aliexpressRetailer = new RetailerInfo();
-            aliexpressRetailer.setRetailerId("aliexpress");
-            aliexpressRetailer.setName(match.getShopName());
-            aliexpressRetailer.setLogo("https://upload.wikimedia.org/wikipedia/commons/3/3b/Aliexpress_logo.svg");
-            aliexpressRetailer.setProductUrl(match.getProductDetailUrl());
-            aliexpressRetailer.setCurrentPrice(priceInfo.getAliexpressPriceAed());
-            aliexpressRetailer.setInStock(true); // Assuming in stock if found
+                // Deduplicate by retailer name, keeping the one with the lowest price
+                java.util.Map<String, RetailerInfo> bestOffers = allOffers.stream()
+                    .filter(offer -> offer.getName() != null && offer.getProductUrl() != null && !offer.getProductUrl().isEmpty())
+                    .collect(java.util.stream.Collectors.toMap(
+                        RetailerInfo::getName,
+                        offer -> offer,
+                        (offer1, offer2) -> offer1.getCurrentPrice() < offer2.getCurrentPrice() ? offer1 : offer2
+                    ));
+                
+                // Sort the deduplicated offers by price and take the top 5
+                List<RetailerInfo> finalOffers = bestOffers.values().stream()
+                    .sorted(java.util.Comparator.comparingDouble(RetailerInfo::getCurrentPrice))
+                    .limit(5)
+                    .collect(Collectors.toList());
 
-            product.getRetailers().add(aliexpressRetailer);
+                product.setRetailers(finalOffers);
+                logger.info("Saving {} unique offers.", finalOffers.size());
+                saveProduct(product);
+            } else {
+                logger.warn("No Shopping offers found for: {}", product.getName());
+            }
         } else {
-            logger.warn("No AliExpress match found for: {}", product.getName());
+            logger.info("Skipping Google Shopping search as comparison data already exists for: {}", product.getName());
         }
-
-        // Optionally save the enriched product back to the database
-        // saveProduct(product);
 
         return Optional.of(product);
     }
 
     public List<ProductDocument> getAllProducts() {
         logger.info("Fetching all products");
-        return firebaseService.getAllProducts();
+        List<ProductDocument> products = firebaseService.getAllProducts();
+        products.forEach(this::retainOnlyAmazonRetailer);
+        return products;
     }
 
     public List<ProductDocument> searchProducts(String query) {
         logger.info("Searching products with query: {}", query);
         List<ProductDocument> allProducts = firebaseService.getAllProducts();
         if (query == null || query.trim().isEmpty()) {
+            allProducts.forEach(this::retainOnlyAmazonRetailer);
             return allProducts;
         }
         String lowerCaseQuery = query.toLowerCase();
-        return allProducts.stream()
-                .filter(product -> product.getName().toLowerCase().contains(lowerCaseQuery))
+        List<ProductDocument> filteredProducts = allProducts.stream()
+                .filter(p -> p.getName().toLowerCase().contains(lowerCaseQuery))
                 .collect(java.util.stream.Collectors.toList());
+        filteredProducts.forEach(this::retainOnlyAmazonRetailer);
+        return filteredProducts;
+    }
+
+    private void retainOnlyAmazonRetailer(ProductDocument product) {
+        if (product.getRetailers() != null) {
+            List<RetailerInfo> amazonRetailers = product.getRetailers().stream()
+                .filter(r -> "amazon".equals(r.getRetailerId()))
+                .collect(Collectors.toList());
+            product.setRetailers(amazonRetailers);
+        }
     }
 
     public List<String> getAmazonCategories() {
         logger.info("Fetching categories from Amazon");
-        // This is a placeholder. In a real application, you would have a mechanism
-        // to fetch and store categories from Amazon.
         return List.of("Electronics", "Computers", "Smart Home", "Video Games");
     }
 
@@ -118,57 +140,5 @@ public class ProductService {
         logger.info("Saving product to Firebase: {}", product.getName());
         firebaseService.saveProduct(product);
         return product;
-    }
-
-
-    public void updateAllProducts(String query) {
-        logger.info("Updating all products for query: {}", query);
-        List<ProductDocument> productSummaries = priceApiService.fetchProductData("amazon", query);
-
-        if (productSummaries == null || productSummaries.isEmpty()) {
-            logger.warn("No product summaries found for query: {}", query);
-            return;
-        }
-
-        List<CompletableFuture<Void>> futures = productSummaries.stream()
-                .filter(summary -> summary != null && summary.getId() != null)
-                .map(summary -> CompletableFuture.runAsync(() -> {
-                    try {
-                        Optional<ProductDocument> existingProductOpt = getProductById(summary.getId());
-                        long twentyFourHoursInMillis = 24 * 60 * 60 * 1000;
-
-                        if (existingProductOpt.isPresent()) {
-                            ProductDocument existingProduct = existingProductOpt.get();
-                            if (existingProduct.getLastChecked() != null &&
-                                (new Date().getTime() - existingProduct.getLastChecked().getTime()) < twentyFourHoursInMillis) {
-                                logger.info("Skipping recently checked product: {}", existingProduct.getName());
-                                return;
-                            }
-                            // Product exists, merge data
-                            existingProduct.setPrice(summary.getPrice());
-                            existingProduct.setCurrency(summary.getCurrency());
-                            existingProduct.setRating(summary.getRating());
-                            existingProduct.setReviews(summary.getReviews());
-                            existingProduct.setLastChecked(new Date());
-                            saveProduct(existingProduct);
-                            logger.info("Updated product: {}", existingProduct.getName());
-                        } else {
-                            // Product does not exist, fetch full details and save
-                            ProductDocument fullProductDetails = amazonApiService.getProductDetails(summary.getId());
-                            if (fullProductDetails != null) {
-                                fullProductDetails.setLastChecked(new Date());
-                                saveProduct(fullProductDetails);
-                                logger.info("Saved new product: {}", fullProductDetails.getName());
-                            } else {
-                                logger.warn("Could not fetch full details for new product with ID: {}", summary.getId());
-                            }
-                        }
-                    } catch (Exception e) {
-                        logger.error("Error processing product with ID: {}", summary.getId(), e);
-                    }
-                }))
-                .collect(Collectors.toList());
-
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 }

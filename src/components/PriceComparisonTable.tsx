@@ -6,11 +6,11 @@ interface PriceComparisonTableProps {
 }
 
 const PriceComparisonTable = ({ retailers }: PriceComparisonTableProps) => {
-  if (!retailers || retailers.length === 0) {
+  if (!retailers || retailers.length <= 1) {
     return (
       <div className="bg-white rounded-xl shadow-sm p-5 text-center">
         <h3 className="text-xl font-semibold text-secondary mb-2">Price Comparison</h3>
-        <p className="text-gray-500">No retailer information available for this product.</p>
+        <p className="text-gray-500">No other retailers found for this product.</p>
       </div>
     );
   }
@@ -65,11 +65,6 @@ const PriceComparisonTable = ({ retailers }: PriceComparisonTableProps) => {
                 <tr key={retailer.retailerId} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center min-w-max">
-                      <img
-                        src={retailer.logo}
-                        alt={retailer.name}
-                        className="h-6 mr-3"
-                      />
                       <span className="font-medium">{retailer.name}</span>
                     </div>
                   </td>

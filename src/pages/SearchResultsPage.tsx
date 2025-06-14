@@ -162,38 +162,7 @@ const SearchResultsPage = () => {
               </button>
             </div>
             
-            <div className="mb-6">
-              <h3 className="font-medium mb-3">Price Range</h3>
-              <div className="flex justify-between mb-2">
-                <span className="text-sm text-gray-600">{priceRange[0]} AED</span>
-                <span className="text-sm text-gray-600">{priceRange[1]} AED</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="5000"
-                value={priceRange[1]}
-                onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                className="w-full"
-              />
-            </div>
             
-            <div className="mb-6">
-              <h3 className="font-medium mb-3">Retailers</h3>
-              <div className="space-y-2">
-                {allRetailers.map((retailer) => (
-                  <label key={retailer} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedRetailers.includes(retailer)}
-                      onChange={() => handleRetailerToggle(retailer)}
-                      className="rounded text-primary focus:ring-primary"
-                    />
-                    <span className="ml-2 text-sm">{retailer}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
             
             <div>
               <h3 className="font-medium mb-3">Rating</h3>
