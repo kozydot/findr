@@ -177,7 +177,7 @@ const PriceHistoryChart = ({ retailers, productName }: PriceHistoryChartProps) =
             
             {retailers.map((retailer) => (
               <Line
-                key={retailer.id}
+                key={retailer.retailerId}
                 type="monotone"
                 dataKey={retailer.name}
                 stroke={retailerColors[retailer.name as keyof typeof retailerColors] || '#8884d8'}

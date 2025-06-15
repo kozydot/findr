@@ -6,7 +6,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-// @EnableScheduling // Temporarily disabled to prevent API rate limiting
+@EnableScheduling
 @EnableCaching
 public class PriceComparatorApplication {
 

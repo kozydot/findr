@@ -1,6 +1,8 @@
 package com.example.price_comparator.dto;
 
+import com.example.price_comparator.model.SpecificationInfo;
 import lombok.Data;
+import java.util.List;
 
 @Data
 public class ShoppingProduct {
@@ -9,4 +11,6 @@ public class ShoppingProduct {
     private String seller;
     private String productLink;
     private String imageUrl;
+    private String description;
+    private List<SpecificationInfo> specifications;
 }

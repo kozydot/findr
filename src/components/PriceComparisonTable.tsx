@@ -9,7 +9,7 @@ const PriceComparisonTable = ({ retailers }: PriceComparisonTableProps) => {
   if (!retailers || retailers.length <= 1) {
     return (
       <div className="bg-white rounded-xl shadow-sm p-5 text-center">
-        <h3 className="text-xl font-semibold text-secondary mb-2">Price Comparison</h3>
+        <h3 className="text-xl font-semibold text-secondary mb-2">Similar Products</h3>
         <p className="text-gray-500">No other retailers found for this product.</p>
       </div>
     );
@@ -30,7 +30,7 @@ const PriceComparisonTable = ({ retailers }: PriceComparisonTableProps) => {
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
       <div className="p-4 border-b border-gray-100">
-        <h3 className="text-xl font-semibold text-secondary">Price Comparison</h3>
+        <h3 className="text-xl font-semibold text-secondary">Similar Products</h3>
       </div>
       
       <div className="overflow-x-auto">

@@ -29,7 +29,6 @@ export interface Product {
   reviews: number;
   retailers: Retailer[];
   specifications?: Specification[];
-  productInformation?: { [key: string]: string };
   price?: string;
   currency?: string;
 }

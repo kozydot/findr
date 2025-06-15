@@ -101,15 +101,30 @@ public void saveUser(com.example.price_comparator.model.User user) {
     }
 
     public long getLastAmazonFetchTimestamp() {
-        // This is a placeholder. In a real application, you would store and retrieve
-        // this value from a persistent location (e.g., a specific node in Firebase).
-        return 0;
+        DatabaseReference ref = database.getReference("metadata/lastAmazonFetch");
+        CompletableFuture<Long> future = new CompletableFuture<>();
+        ref.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Long timestamp = dataSnapshot.getValue(Long.class);
+                future.complete(timestamp != null ? timestamp : 0L);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                future.completeExceptionally(databaseError.toException());
+            }
+        });
+        try {
+            return future.get();
+        } catch (Exception e) {
+            logger.error("Error fetching last Amazon fetch timestamp", e);
+            return 0;
+        }
     }
 
     public void updateLastAmazonFetchTimestamp(long timestamp) {
-        // This is a placeholder. In a real application, you would store this value.
-        // For example:
-        // DatabaseReference ref = database.getReference("meta/lastAmazonFetchTimestamp");
-        // ref.setValueAsync(timestamp);
+        DatabaseReference ref = database.getReference("metadata/lastAmazonFetch");
+        ref.setValueAsync(timestamp);
     }
 }

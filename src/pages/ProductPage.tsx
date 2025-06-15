@@ -257,11 +257,11 @@ const ProductPage = () => {
               ) : (
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <div className="divide-y divide-gray-200">
-                    {product.productInformation && Object.keys(product.productInformation).length > 0 ? (
-                      Object.entries(product.productInformation).map(([key, value]) => (
-                        <div key={key} className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                          <div className="text-sm font-medium text-gray-500">{key}</div>
-                          <div className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{value}</div>
+                    {product.specifications && product.specifications.length > 0 ? (
+                      product.specifications.map((spec, index) => (
+                        <div key={index} className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                          <div className="text-sm font-medium text-gray-500">{spec.name}</div>
+                          <div className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{spec.value}</div>
                         </div>
                       ))
                     ) : (

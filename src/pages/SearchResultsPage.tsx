@@ -5,7 +5,6 @@ import {
   X, ChevronDown, Star, Check
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
-import { useProducts } from '../context/ProductContext';
 import { Product } from '../types';
 
 type SortOption = 'price_asc' | 'price_desc' | 'rating' | 'popularity';
@@ -15,9 +14,9 @@ const SearchResultsPage = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
   
-  const { searchProducts, loading: productsLoading, error: productsError } = useProducts();
-
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState<string | null>(null);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>('price_asc');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -37,25 +36,42 @@ const SearchResultsPage = () => {
   }, [allProducts]);
 
   useEffect(() => {
-    const results = searchProducts(query);
-    setAllProducts(results);
+    const fetchSearchResults = async () => {
+      setProductsLoading(true);
+      setProductsError(null);
+      try {
+        const url = query ? `/api/v1/products/search?q=${encodeURIComponent(query)}` : '/api/v1/products';
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error('Failed to fetch products');
+        }
+        const data: Product[] = await response.json();
+        setAllProducts(data);
 
-    if (results.length > 0) {
-      const prices = results
-        .flatMap(p => (p.retailers || []).map(r => r.currentPrice))
-        .filter(price => typeof price === 'number' && isFinite(price));
+        if (data.length > 0) {
+            const prices = data
+              .flatMap(p => (p.retailers || []).map(r => r.currentPrice))
+              .filter(price => typeof price === 'number' && isFinite(price));
 
-      if (prices.length > 0) {
-        const minPrice = Math.floor(Math.min(...prices));
-        const maxPrice = Math.ceil(Math.max(...prices));
-        setPriceRange([minPrice, maxPrice]);
-      } else {
-        setPriceRange([0, 5000]);
-      }
-    } else {
-      setPriceRange([0, 5000]);
-    }
-  }, [query, searchProducts]);
+            if (prices.length > 0) {
+              const minPrice = Math.floor(Math.min(...prices));
+              const maxPrice = Math.ceil(Math.max(...prices));
+              setPriceRange([minPrice, maxPrice]);
+            } else {
+              setPriceRange([0, 5000]);
+            }
+          } else {
+            setPriceRange([0, 5000]);
+          }
+        } catch (error: any) {
+          setProductsError(error.message);
+        } finally {
+          setProductsLoading(false);
+        }
+      };
+
+    fetchSearchResults();
+  }, [query]);
   
   const sortProducts = useCallback((productsToSort: Product[], sortOption: SortOption) => {
     return [...productsToSort].sort((a, b) => {

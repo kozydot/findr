@@ -44,15 +44,24 @@ public class DataInitializationService implements ApplicationRunner {
         for (String category : categories) {
             logger.info("Fetching products for category: {}", category);
             List<ProductDocument> products = amazonApiService.searchProducts(category);
-            for (ProductDocument product : products) {
-                productService.saveProduct(product);
-            }
-            try {
-                // Wait for 5 seconds before the next category to avoid rate limiting
-                TimeUnit.SECONDS.sleep(5);
-            } catch (InterruptedException e) {
-                logger.error("Data initialization was interrupted during wait", e);
-                Thread.currentThread().interrupt();
+            for (ProductDocument productSummary : products) {
+                if (productSummary.getId() != null && !productSummary.getId().isEmpty()) {
+                    try {
+                        logger.info("Fetching full details for product: {}", productSummary.getId());
+                        ProductDocument fullProductDetails = amazonApiService.getProductDetails(productSummary.getId());
+                        if (fullProductDetails != null) {
+                            productService.saveProduct(fullProductDetails);
+                        }
+                        // Wait for a short period to avoid rate limiting on the details endpoint
+                        TimeUnit.SECONDS.sleep(2);
+                    } catch (InterruptedException e) {
+                        logger.error("Data initialization was interrupted during detail fetch wait", e);
+                        Thread.currentThread().interrupt();
+                        return; // Exit if interrupted
+                    } catch (Exception e) {
+                        logger.error("Failed to fetch or save details for product {}", productSummary.getId(), e);
+                    }
+                }
             }
         }
 
