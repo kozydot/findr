@@ -29,12 +29,12 @@ public class AmazonApiService implements RetailerApiService {
             .readTimeout(60, TimeUnit.SECONDS)
             .build();
 
-    private static final String API_KEY = "d336a2ff15msh500feeae2fac677p1c7019jsn3eab45d6f3df";
+    private static final String API_KEY = "630ee18098msh8b902cd1f9e530cp1203a7jsn3f3a585e3b1c";
     private static final String API_HOST = "real-time-amazon-data.p.rapidapi.com";
 
-    public List<ProductDocument> searchProductsByCategory(String category) {
+    public List<ProductDocument> searchProducts(String query) {
         try {
-            String url = "https://" + API_HOST + "/search?query=" + category + "&page=1&country=AE&language=en_AE";
+            String url = "https://" + API_HOST + "/search?query=" + query + "&page=1&country=AE&language=en_AE";
             Request request = new Request.Builder()
                     .url(url)
                     .get()
@@ -95,14 +95,14 @@ public class AmazonApiService implements RetailerApiService {
             return products;
 
         } catch (IOException e) {
-            System.err.println("Error searching Amazon products by category: " + e.getMessage());
+            System.err.println("Error searching Amazon products: " + e.getMessage());
             return new ArrayList<>();
         }
     }
 
-    public List<ProductDocument> searchProducts(String query) {
+    public List<ProductDocument> searchProductsByCategory(String category) {
         try {
-            String url = "https://real-time-amazon-data.p.rapidapi.com/search?query=" + query + "&page=1&country=AE&sort_by=RELEVANCE&product_condition=ALL&is_prime=false&deals_and_discounts=NONE&language=en_AE";
+            String url = "https://real-time-amazon-data.p.rapidapi.com/search?query=" + category + "&page=1&country=AE&sort_by=RELEVANCE&product_condition=ALL&is_prime=false&deals_and_discounts=NONE&language=en_AE";
             Request request = new Request.Builder()
                     .url(url)
                     .get()
@@ -163,7 +163,7 @@ public class AmazonApiService implements RetailerApiService {
             return products;
 
         } catch (IOException e) {
-            System.err.println("Error searching Amazon products: " + e.getMessage());
+            System.err.println("Error searching Amazon products by category: " + e.getMessage());
             return new ArrayList<>();
         }
     }
