@@ -1,6 +1,5 @@
 package com.example.price_comparator.service;
 
-import com.example.price_comparator.model.PriceHistoryPoint;
 import com.example.price_comparator.model.ProductDocument;
 import com.example.price_comparator.model.RetailerInfo;
 import org.slf4j.Logger;
@@ -52,7 +51,7 @@ public class ScheduledTasksService {
         for (String category : categories) {
             try {
                 logger.info("Attempting to update product data for category: {}", category);
-                List<com.example.price_comparator.model.ProductDocument> products = amazonApiService.searchProducts(category);
+                List<com.example.price_comparator.model.ProductDocument> products = amazonApiService.searchProductsByCategory(category).join();
                 for (com.example.price_comparator.model.ProductDocument product : products) {
                     productService.saveProduct(product);
                 }
@@ -69,47 +68,4 @@ public class ScheduledTasksService {
         logger.info("Scheduled task: Hourly product update finished for all categories.");
     }
 
-    @Scheduled(cron = "0 0 * * * *") // Runs at the top of every hour
-    public void updatePriceHistory() {
-        logger.info("Starting scheduled price history update...");
-        List<ProductDocument> allProducts = firebaseService.getAllProducts();
-
-        for (ProductDocument product : allProducts) {
-            try {
-                logger.info("Checking price history for product: {}", product.getName());
-                Optional<RetailerInfo> amazonRetailerOpt = product.getRetailers().stream()
-                        .filter(r -> "amazon".equalsIgnoreCase(r.getRetailerId()))
-                        .findFirst();
-
-                if (amazonRetailerOpt.isPresent()) {
-                    ProductDocument freshData = amazonApiService.getProductDetails(product.getId());
-                    if (freshData != null && !freshData.getRetailers().isEmpty()) {
-                        RetailerInfo freshAmazonRetailer = freshData.getRetailers().get(0);
-                        RetailerInfo existingAmazonRetailer = amazonRetailerOpt.get();
-
-                        if (freshAmazonRetailer.getCurrentPrice() != existingAmazonRetailer.getCurrentPrice()) {
-                            logger.info("Price change detected for {}: old={}, new={}", product.getName(), existingAmazonRetailer.getCurrentPrice(), freshAmazonRetailer.getCurrentPrice());
-                            
-                            existingAmazonRetailer.setCurrentPrice(freshAmazonRetailer.getCurrentPrice());
-                            
-                            String currentDate = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-                            existingAmazonRetailer.getPriceHistory().add(new PriceHistoryPoint(currentDate, freshAmazonRetailer.getCurrentPrice()));
-                            
-                            productService.saveProduct(product);
-                            logger.info("Updated price history for {}", product.getName());
-                        }
-                    }
-                }
-                // Wait before processing the next product to avoid rate limiting
-                TimeUnit.SECONDS.sleep(5);
-            } catch (InterruptedException e) {
-                logger.error("Price history update was interrupted", e);
-                Thread.currentThread().interrupt();
-                return;
-            } catch (Exception e) {
-                logger.error("Failed to update price history for product {}", product.getId(), e);
-            }
-        }
-        logger.info("Finished scheduled price history update.");
-    }
 }

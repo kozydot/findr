@@ -3,8 +3,9 @@ package com.example.price_comparator.service;
 import com.example.price_comparator.model.ProductDocument;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public interface RetailerApiService {
-    List<ProductDocument> searchProducts(String query);
-    ProductDocument getProductDetails(String id);
+    CompletableFuture<List<ProductDocument>> searchProducts(String query);
+    CompletableFuture<ProductDocument> getProductDetails(String id);
 }

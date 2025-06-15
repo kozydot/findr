@@ -4,11 +4,12 @@ import {
   Share2, Star, ChevronRight, ArrowLeft,
   ShoppingCart, Heart, Bell
 } from 'lucide-react';
-import PriceHistoryChart from '../components/PriceHistoryChart';
 import PriceComparisonTable from '../components/PriceComparisonTable';
 import AlertForm from '../components/AlertForm';
 import { Product } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,45 @@ const ProductPage = () => {
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
+    let isMounted = true;
+    const client = new Client({
+      webSocketFactory: () => new SockJS('/ws'),
+      onConnect: () => {
+        client.subscribe(`/topic/products/${id}`, message => {
+          const updatedProduct = JSON.parse(message.body);
+          if (isMounted) {
+            setProduct(prevProduct => {
+              if (!prevProduct) return updatedProduct;
+
+              const newProductData = { ...prevProduct };
+
+              // Deep merge retailers to avoid duplicates
+              if (updatedProduct.retailers) {
+                const newRetailers = updatedProduct.retailers || [];
+                const existingRetailers = prevProduct.retailers || [];
+                const allRetailers = [...existingRetailers, ...newRetailers];
+                const uniqueRetailers = allRetailers.filter((r, i, a) => a.findIndex(t => t.retailerId === r.retailerId) === i);
+                newProductData.retailers = uniqueRetailers;
+              }
+
+              // Merge other properties, avoiding null overwrites
+              for (const key in updatedProduct) {
+                if (key !== 'retailers' && Object.prototype.hasOwnProperty.call(updatedProduct, key)) {
+                  const value = updatedProduct[key as keyof Product];
+                  if (value != null) {
+                    // @ts-ignore
+                    newProductData[key] = value;
+                  }
+                }
+              }
+              
+              return newProductData;
+            });
+          }
+        });
+      },
+    });
+
     const fetchProduct = async () => {
       if (!id) {
         setLoading(false);
@@ -36,17 +76,79 @@ const ProductPage = () => {
             throw new Error(`Failed to fetch product data. Status: ${response.status}`);
           }
         } else {
-          const data: Product = await response.json();
-          setProduct(data);
+          const productData: Product = await response.json();
+          if (isMounted) {
+            setProduct(productData);
+            if (!productData.description) {
+              await fetch(`/api/v1/products/${id}/enrich`, { method: 'POST' });
+            }
+            const compareResponse = await fetch(`/api/v1/products/${id}/compare`, { method: 'POST' });
+            const taskId = await compareResponse.text();
+            pollForComparison(taskId);
+          }
         }
       } catch (err: any) {
-        setError(err.message);
+        if (isMounted) {
+          setError(err.message);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
+    const pollForComparison = (taskId: string) => {
+      const interval = setInterval(async () => {
+        try {
+          const response = await fetch(`/api/v1/products/comparison/${taskId}`);
+          if (response.status === 200) {
+            const updatedProduct: Product = await response.json();
+            if (isMounted) {
+              setProduct(prevProduct => {
+                if (!prevProduct) return updatedProduct;
+
+                const newProductData = { ...prevProduct };
+
+                // Deep merge retailers to avoid duplicates
+                if (updatedProduct.retailers) {
+                  const newRetailers = updatedProduct.retailers || [];
+                  const existingRetailers = prevProduct.retailers || [];
+                  const allRetailers = [...existingRetailers, ...newRetailers];
+                  const uniqueRetailers = allRetailers.filter((r, i, a) => a.findIndex(t => t.retailerId === r.retailerId) === i);
+                  newProductData.retailers = uniqueRetailers;
+                }
+
+                // Merge other properties, avoiding null overwrites
+                for (const key in updatedProduct) {
+                  if (key !== 'retailers' && Object.prototype.hasOwnProperty.call(updatedProduct, key)) {
+                    const value = updatedProduct[key as keyof Product];
+                    if (value != null) {
+                      // @ts-ignore
+                      newProductData[key] = value;
+                    }
+                  }
+                }
+                
+                return newProductData;
+              });
+              clearInterval(interval);
+            }
+          }
+        } catch (err) {
+          console.error("Polling error:", err);
+          clearInterval(interval);
+        }
+      }, 2000);
+    };
+
     fetchProduct();
+    client.activate();
+
+    return () => {
+      isMounted = false;
+      client.deactivate();
+    };
   }, [id]);
 
   if (loading) {
@@ -115,17 +217,17 @@ const ProductPage = () => {
   
   return (
     <div className="container mx-auto px-4 py-6 md:py-10">
-      <div className="flex items-center text-sm text-gray-500 mb-6">
+      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-6">
         <Link to="/" className="hover:text-primary">Home</Link>
         <ChevronRight size={14} className="mx-2" />
         <Link to="/search" className="hover:text-primary">Search</Link>
         <ChevronRight size={14} className="mx-2" />
-        <span className="text-gray-700 font-medium line-clamp-1">
+        <span className="text-gray-700 dark:text-gray-300 font-medium line-clamp-1">
           {product.name}
         </span>
       </div>
       
-      <Link to="/search" className="inline-flex items-center text-secondary hover:text-primary mb-6">
+      <Link to="/search" className="inline-flex items-center text-secondary dark:text-gray-300 hover:text-primary mb-6">
         <ArrowLeft size={18} className="mr-2" />
         Back to search results
       </Link>
@@ -135,7 +237,7 @@ const ProductPage = () => {
         <div className="lg:col-span-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <div className="bg-white rounded-xl shadow-sm p-6 flex items-center justify-center">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 flex items-center justify-center">
                 <img
                   src={product.imageUrl}
                   alt={product.name}
@@ -146,7 +248,7 @@ const ProductPage = () => {
                 {[1, 2, 3].map((_, index) => (
                   <button
                     key={index}
-                    className={`w-16 h-16 border rounded-lg overflow-hidden ${index === 0 ? 'border-primary' : 'border-gray-200'}`}
+                    className={`w-16 h-16 border rounded-lg overflow-hidden ${index === 0 ? 'border-primary' : 'border-gray-200 dark:border-gray-700'}`}
                   >
                     <img
                       src={product.imageUrl}
@@ -158,7 +260,7 @@ const ProductPage = () => {
               </div>
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-secondary mb-4">
+              <h1 className="text-2xl md:text-3xl font-bold text-secondary dark:text-white mb-4">
                 {product.name}
               </h1>
               <div className="flex items-center mb-4">
@@ -173,15 +275,15 @@ const ProductPage = () => {
                     />
                   ))}
                 </div>
-                <span className="ml-2 text-sm text-gray-600">{product.rating} ({product.reviews} reviews)</span>
+                <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">{product.rating} ({product.reviews} reviews)</span>
               </div>
               {hasRetailers && bestRetailer && (
                 <>
                   <div className="mb-6">
-                    <div className="text-sm text-gray-500 mb-1">Best price from:</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Best price from:</div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <span className="font-medium text-secondary">{bestRetailer.name}</span>
+                        <span className="font-medium text-secondary dark:text-white">{bestRetailer.name}</span>
                       </div>
                       <div className="text-2xl font-bold text-primary">
                         {lowestPrice.toFixed(2)} AED
@@ -190,7 +292,7 @@ const ProductPage = () => {
                   </div>
                   <div className="flex space-x-3 mb-6">
                     <a
-                      href={bestRetailer.productUrl}
+                      href={bestRetailer.productUrl.startsWith('/aclk') ? `https://www.google.com${bestRetailer.productUrl}` : bestRetailer.productUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-primary flex-grow flex items-center justify-center"
@@ -200,7 +302,7 @@ const ProductPage = () => {
                     </a>
                     <button
                       onClick={handleShareClick}
-                      className="btn bg-gray-100 text-secondary hover:bg-gray-200 p-3"
+                      className="btn bg-gray-100 dark:bg-gray-700 text-secondary dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 p-3"
                       aria-label="Share"
                     >
                       <Share2 size={18} />
@@ -211,7 +313,7 @@ const ProductPage = () => {
                         className={`btn p-3 ${
                           isFavorite
                             ? 'bg-primary/10 text-primary hover:bg-primary/20'
-                            : 'bg-gray-100 text-secondary hover:bg-gray-200'
+                            : 'bg-gray-100 dark:bg-gray-700 text-secondary dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                         aria-label="Add to favorites"
                       >
@@ -225,14 +327,14 @@ const ProductPage = () => {
           </div>
 
           <div className="mt-10">
-            <div className="border-b border-gray-200 mb-4">
+            <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
               <div className="flex">
                 <button
                   onClick={() => setActiveTab('description')}
                   className={`py-3 px-4 text-sm font-medium border-b-2 ${
                     activeTab === 'description'
                       ? 'border-primary text-primary'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                   }`}
                 >
                   Description
@@ -242,31 +344,31 @@ const ProductPage = () => {
                   className={`py-3 px-4 text-sm font-medium border-b-2 ${
                     activeTab === 'specifications'
                       ? 'border-primary text-primary'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                   }`}
                 >
                   Specifications
                 </button>
               </div>
             </div>
-            <div className="text-gray-600">
+            <div className="text-gray-600 dark:text-gray-300">
               {activeTab === 'description' ? (
-                <div className="prose prose-sm max-w-none">
+                <div className="prose prose-sm max-w-none dark:prose-invert">
                   <p>{product.description}</p>
                 </div>
               ) : (
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="divide-y divide-gray-200">
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  <div className="divide-y divide-gray-200 dark:divide-gray-700">
                     {product.specifications && product.specifications.length > 0 ? (
                       product.specifications.map((spec, index) => (
                         <div key={index} className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                          <div className="text-sm font-medium text-gray-500">{spec.name}</div>
-                          <div className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{spec.value}</div>
+                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{spec.name}</div>
+                          <div className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">{spec.value}</div>
                         </div>
                       ))
                     ) : (
                       <div className="px-4 py-5 sm:px-6">
-                        <p className="text-sm text-gray-500">No specifications available for this product.</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">No specifications available for this product.</p>
                       </div>
                     )}
                   </div>
@@ -277,7 +379,6 @@ const ProductPage = () => {
           
           {hasRetailers && (
             <div className="mt-10">
-              <PriceHistoryChart retailers={product.retailers} productName={product.name} />
             </div>
           )}
         </div>
@@ -290,11 +391,11 @@ const ProductPage = () => {
                 {isAuthenticated ? (
                   <AlertForm product={product} />
                 ) : (
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-4">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden p-4">
                     <div className="text-center p-4">
                       <Bell size={24} className="mx-auto text-primary mb-3" />
-                      <h3 className="font-semibold text-lg mb-2">Get Price Drop Alerts</h3>
-                      <p className="text-gray-600 text-sm mb-4">
+                      <h3 className="font-semibold text-lg mb-2 dark:text-white">Get Price Drop Alerts</h3>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                         Sign in to set up price alerts and we'll notify you when prices drop.
                       </p>
                       <Link to="/login" className="btn btn-primary text-sm">
@@ -309,9 +410,9 @@ const ProductPage = () => {
                 </div>
               </>
             ) : (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
-                <h3 className="font-semibold text-lg mb-2">No Price Data</h3>
-                <p className="text-gray-600 text-sm">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 text-center">
+                <h3 className="font-semibold text-lg mb-2 dark:text-white">No Price Data</h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
                   There is currently no price comparison data available for this product.
                 </p>
               </div>

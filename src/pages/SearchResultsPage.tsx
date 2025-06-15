@@ -163,16 +163,16 @@ const SearchResultsPage = () => {
         <h1 className="text-3xl font-bold text-secondary">
           {query ? `Search Results for "${query}"` : 'All Products'}
         </h1>
-        <p className="text-gray-600 mt-2">
+        <p className="text-gray-600 dark:text-gray-400 mt-2">
           Found {filteredProducts.length} products
         </p>
       </div>
       
       <div className="flex flex-col lg:flex-row gap-8">
         <aside className="hidden lg:block w-64 flex-shrink-0">
-          <div className="bg-white rounded-xl shadow-sm p-5">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="font-semibold text-lg">Filters</h2>
+              <h2 className="font-semibold text-lg dark:text-white">Filters</h2>
               <button onClick={clearAllFilters} className="text-primary text-sm hover:underline">
                 Clear all
               </button>
@@ -204,9 +204,9 @@ const SearchResultsPage = () => {
         </aside>
         
         <main className="flex-grow">
-          <div className="bg-white rounded-xl shadow-sm p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center">
-              <button onClick={toggleMobileFilter} className="lg:hidden flex items-center text-secondary mr-4">
+              <button onClick={toggleMobileFilter} className="lg:hidden flex items-center text-secondary dark:text-gray-300 mr-4">
                 <Filter size={18} className="mr-1" />
                 Filters
               </button>
@@ -215,7 +215,7 @@ const SearchResultsPage = () => {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  className="appearance-none bg-gray-100 rounded-lg px-4 py-2 pr-8 text-sm font-medium focus:outline-none"
+                  className="appearance-none bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-2 pr-8 text-sm font-medium focus:outline-none"
                 >
                   <option value="price_asc">Price: Low to High</option>
                   <option value="price_desc">Price: High to Low</option>
@@ -227,10 +227,10 @@ const SearchResultsPage = () => {
             </div>
             
             <div className="flex items-center space-x-2">
-              <button onClick={() => setViewMode('grid')} className={`p-2 rounded ${viewMode === 'grid' ? 'bg-gray-100 text-primary' : 'text-gray-500'}`}>
+              <button onClick={() => setViewMode('grid')} className={`p-2 rounded ${viewMode === 'grid' ? 'bg-gray-100 dark:bg-gray-700 text-primary' : 'text-gray-500'}`}>
                 <Grid size={18} />
               </button>
-              <button onClick={() => setViewMode('list')} className={`p-2 rounded ${viewMode === 'list' ? 'bg-gray-100 text-primary' : 'text-gray-500'}`}>
+              <button onClick={() => setViewMode('list')} className={`p-2 rounded ${viewMode === 'list' ? 'bg-gray-100 dark:bg-gray-700 text-primary' : 'text-gray-500'}`}>
                 <List size={18} />
               </button>
             </div>
@@ -239,17 +239,17 @@ const SearchResultsPage = () => {
           {(selectedRetailers.length > 0 || selectedRating !== null) && (
             <div className="flex flex-wrap gap-2 mb-6">
               {selectedRetailers.map(retailer => (
-                <div key={retailer} className="bg-gray-100 rounded-full px-3 py-1 text-sm flex items-center">
+                <div key={retailer} className="bg-gray-100 dark:bg-gray-700 rounded-full px-3 py-1 text-sm flex items-center">
                   {retailer}
-                  <button onClick={() => handleRetailerToggle(retailer)} className="ml-2 text-gray-500 hover:text-gray-700">
+                  <button onClick={() => handleRetailerToggle(retailer)} className="ml-2 text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white">
                     <X size={14} />
                   </button>
                 </div>
               ))}
               {selectedRating !== null && (
-                <div className="bg-gray-100 rounded-full px-3 py-1 text-sm flex items-center">
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-full px-3 py-1 text-sm flex items-center">
                   {selectedRating}+ Stars
-                  <button onClick={() => setSelectedRating(null)} className="ml-2 text-gray-500 hover:text-gray-700">
+                  <button onClick={() => setSelectedRating(null)} className="ml-2 text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white">
                     <X size={14} />
                   </button>
                 </div>
@@ -261,9 +261,9 @@ const SearchResultsPage = () => {
           )}
           
           {filteredProducts.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-              <h3 className="text-xl font-semibold mb-2">No products found</h3>
-              <p className="text-gray-600 mb-4">Try adjusting your filters or search term.</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
+              <h3 className="text-xl font-semibold mb-2 dark:text-white">No products found</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">Try adjusting your filters or search term.</p>
               <button onClick={clearAllFilters} className="btn btn-primary">
                 Clear Filters
               </button>
@@ -279,9 +279,9 @@ const SearchResultsPage = () => {
       </div>
       
       <div className={`fixed inset-0 bg-black/50 z-50 transition-opacity duration-300 ${isMobileFilterOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-        <div className={`fixed bottom-0 left-0 right-0 bg-white rounded-t-xl p-5 transition-transform duration-300 transform ${isMobileFilterOpen ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-xl p-5 transition-transform duration-300 transform ${isMobileFilterOpen ? 'translate-y-0' : 'translate-y-full'}`}>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="font-semibold text-lg">Filters</h2>
+            <h2 className="font-semibold text-lg dark:text-white">Filters</h2>
             <div className="flex items-center">
               <button onClick={clearAllFilters} className="text-primary text-sm hover:underline mr-4">
                 Clear all
@@ -294,8 +294,8 @@ const SearchResultsPage = () => {
             <div className="mb-6">
               <h3 className="font-medium mb-3">Price Range</h3>
               <div className="flex justify-between mb-2">
-                <span className="text-sm text-gray-600">{priceRange[0]} AED</span>
-                <span className="text-sm text-gray-600">{priceRange[1]} AED</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">{priceRange[0]} AED</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">{priceRange[1]} AED</span>
               </div>
               <input type="range" min="0" max="5000" value={priceRange[1]} onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])} className="w-full" />
             </div>
@@ -306,7 +306,7 @@ const SearchResultsPage = () => {
                 {allRetailers.map((retailer) => (
                   <label key={retailer} className="flex items-center">
                     <input type="checkbox" checked={selectedRetailers.includes(retailer)} onChange={() => handleRetailerToggle(retailer)} className="rounded text-primary focus:ring-primary" />
-                    <span className="ml-2 text-sm">{retailer}</span>
+                    <span className="ml-2 text-sm dark:text-gray-300">{retailer}</span>
                   </label>
                 ))}
               </div>
@@ -330,7 +330,7 @@ const SearchResultsPage = () => {
             </div>
           </div>
           
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-gray-800 border-t dark:border-gray-700">
             <button onClick={toggleMobileFilter} className="btn btn-primary w-full">
               Apply Filters
             </button>

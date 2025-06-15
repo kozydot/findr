@@ -1,9 +1,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { auth } from '../../firebase';
+import { GoogleAuthProvider, signInWithPopup, User as FirebaseUser } from 'firebase/auth';
 
 interface User {
   id: string;
   name: string;
   email: string;
+  providerId?: string;
 }
 
 interface AuthContextType {
@@ -13,6 +16,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string, provider?: string) => Promise<void>;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
+  signInWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -47,6 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         id: 'user-123',
         name: email.split('@')[0],
         email: email,
+        providerId: 'password',
       };
       setUser(newUser);
       setIsAuthenticated(true);
@@ -71,6 +76,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         id: userRecord.uid,
         name: userRecord.displayName,
         email: userRecord.email,
+        providerId: 'password',
       };
       setUser(newUser);
       setIsAuthenticated(true);
@@ -93,9 +99,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('user', JSON.stringify(updatedUser));
     }
   };
+
+  const signInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const firebaseUser: FirebaseUser = result.user;
+      const newUser: User = {
+        id: firebaseUser.uid,
+        name: firebaseUser.displayName || 'Anonymous',
+        email: firebaseUser.email || '',
+        providerId: result.providerId || 'google.com',
+      };
+      setUser(newUser);
+      setIsAuthenticated(true);
+      localStorage.setItem('user', JSON.stringify(newUser));
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+      throw new Error('Failed to sign in with Google');
+    }
+  };
   
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout, updateUser, signInWithGoogle }}>
       {children}
     </AuthContext.Provider>
   );

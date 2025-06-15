@@ -43,8 +43,8 @@ const ProfilePage = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-secondary">My Account</h1>
-        <p className="text-gray-600 mt-2">
+        <h1 className="text-3xl font-bold text-secondary dark:text-white">My Account</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">
           Manage your profile and preferences
         </p>
       </div>
@@ -52,15 +52,15 @@ const ProfilePage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Sidebar */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700">
               <div className="flex items-center">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xl font-bold">
                   {user?.name?.charAt(0) || <User size={24} />}
                 </div>
                 <div className="ml-3">
-                  <h3 className="font-medium">{user?.name}</h3>
-                  <p className="text-gray-500 text-sm">{user?.email}</p>
+                  <h3 className="font-medium dark:text-white">{user?.name}</h3>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">{user?.email}</p>
                 </div>
               </div>
             </div>
@@ -69,9 +69,9 @@ const ProfilePage = () => {
               <button
                 onClick={() => setActiveTab('account')}
                 className={`flex items-center w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                  activeTab === 'account' 
-                    ? 'bg-primary/10 text-primary' 
-                    : 'text-gray-700 hover:bg-gray-50'
+                  activeTab === 'account'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
                 <User size={18} className="mr-3" />
@@ -81,9 +81,9 @@ const ProfilePage = () => {
               <button
                 onClick={() => setActiveTab('notifications')}
                 className={`flex items-center w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                  activeTab === 'notifications' 
-                    ? 'bg-primary/10 text-primary' 
-                    : 'text-gray-700 hover:bg-gray-50'
+                  activeTab === 'notifications'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
                 <Bell size={18} className="mr-3" />
@@ -98,9 +98,9 @@ const ProfilePage = () => {
               <button
                 onClick={() => setActiveTab('security')}
                 className={`flex items-center w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                  activeTab === 'security' 
-                    ? 'bg-primary/10 text-primary' 
-                    : 'text-gray-700 hover:bg-gray-50'
+                  activeTab === 'security'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
                 <Lock size={18} className="mr-3" />
@@ -109,7 +109,7 @@ const ProfilePage = () => {
               
               <button
                 onClick={() => setShowConfirmLogout(true)}
-                className="flex items-center w-full text-left px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex items-center w-full text-left px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 <LogOut size={18} className="mr-3" />
                 Logout
@@ -122,9 +122,9 @@ const ProfilePage = () => {
         <div className="lg:col-span-3">
           {/* Account Information Tab */}
           {activeTab === 'account' && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold">Account Information</h2>
+                <h2 className="text-xl font-semibold dark:text-white">Account Information</h2>
                 <button
                   onClick={() => setIsEditing(!isEditing)}
                   className="text-sm text-primary hover:underline"
@@ -136,7 +136,7 @@ const ProfilePage = () => {
               <form onSubmit={handleUpdateProfile}>
                 <div className="space-y-5">
                   <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Full Name
                     </label>
                     <div className="relative">
@@ -153,7 +153,7 @@ const ProfilePage = () => {
                   </div>
                   
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Email Address
                     </label>
                     <div className="relative">
@@ -183,29 +183,21 @@ const ProfilePage = () => {
                 </div>
               </form>
               
-              <div className="mt-8 pt-6 border-t border-gray-100">
-                <h3 className="font-medium mb-4">Connected Accounts</h3>
+              <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
+                <h3 className="font-medium mb-4 dark:text-white">Connected Accounts</h3>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
                     <div className="flex items-center">
-                      <img 
-                        src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+                      <img
+                        src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                         alt="Google"
                         className="w-5 h-5 mr-3"
                       />
-                      <span>Google</span>
+                      <span className="dark:text-gray-300">Google</span>
                     </div>
-                    <span className="text-sm text-green-600">Connected</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                    <div className="flex items-center">
-                      <svg viewBox="0 0 24 24" className="w-5 h-5 mr-3 text-[#1877F2]" fill="currentColor">
-                        <path d="M9.19795 21.5H13.198V13.4901H16.8021L17.198 9.50977H13.198V7.5C13.198 6.94772 13.6457 6.5 14.198 6.5H17.198V2.5H14.198C11.4365 2.5 9.19795 4.73858 9.19795 7.5V9.50977H7.19795L6.80206 13.4901H9.19795V21.5Z" />
-                      </svg>
-                      <span>Facebook</span>
-                    </div>
-                    <button className="text-sm text-primary hover:underline">Connect</button>
+                    <span className={`text-sm ${user?.providerId === 'google.com' ? 'text-green-600' : 'text-red-600'}`}>
+                      {user?.providerId === 'google.com' ? 'Connected' : 'Connect'}
+                    </span>
                   </div>
                 </div>
               </div>

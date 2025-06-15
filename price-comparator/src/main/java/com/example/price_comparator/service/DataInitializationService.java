@@ -43,7 +43,7 @@ public class DataInitializationService implements ApplicationRunner {
 
         for (String category : categories) {
             logger.info("Fetching products for category: {}", category);
-            List<ProductDocument> products = amazonApiService.searchProductsByCategory(category);
+            List<ProductDocument> products = amazonApiService.searchProductsByCategory(category).join();
             for (ProductDocument product : products) {
                 productService.saveProduct(product);
             }

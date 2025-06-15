@@ -56,40 +56,40 @@ const AlertForm = ({ product }: AlertFormProps) => {
   };
   
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
       {/* Header */}
-      <div 
-        className={`flex items-center justify-between p-4 cursor-pointer ${isActive ? 'bg-primary/10' : ''}`} 
+      <div
+        className={`flex items-center justify-between p-4 cursor-pointer ${isActive ? 'bg-primary/10' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex items-center">
-          <Bell size={18} className={isActive ? 'text-primary' : 'text-gray-500'} />
-          <span className="font-medium ml-2">Price Drop Alert</span>
+          <Bell size={18} className={isActive ? 'text-primary' : 'text-gray-500 dark:text-gray-400'} />
+          <span className="font-medium ml-2 dark:text-white">Price Drop Alert</span>
         </div>
-        <ChevronDown 
-          size={18} 
-          className={`text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+        <ChevronDown
+          size={18}
+          className={`text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </div>
       
       {/* Form */}
       <div className={`overflow-hidden transition-all ${isOpen || isActive ? 'max-h-96' : 'max-h-0'}`}>
-        <div className="p-4 pt-1 border-t border-gray-100">
+        <div className="p-4 pt-1 border-t border-gray-100 dark:border-gray-700">
           {isActive ? (
             <div className="flex flex-col space-y-4">
-              <div className="bg-primary/5 rounded-lg p-3 text-sm">
-                <p className="text-secondary">
+              <div className="bg-primary/5 dark:bg-primary/10 rounded-lg p-3 text-sm">
+                <p className="text-secondary dark:text-gray-300">
                   We'll notify you when the price drops below:
                 </p>
                 <p className="font-bold text-lg text-primary mt-1">
                   {existingAlert?.targetPrice.toFixed(2)} AED
                 </p>
-                <p className="text-gray-500 text-xs mt-1">
+                <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">
                   Current lowest price: {lowestPrice.toFixed(2)} AED
                 </p>
               </div>
               
-              <button 
+              <button
                 onClick={toggleAlert}
                 className="btn btn-outline text-sm"
               >
@@ -98,12 +98,12 @@ const AlertForm = ({ product }: AlertFormProps) => {
             </div>
           ) : (
             <div className="flex flex-col space-y-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 We'll notify you when the price drops below your target price.
               </p>
               
               <div>
-                <label htmlFor="targetPrice" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="targetPrice" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Target Price (AED)
                 </label>
                 <input
@@ -117,7 +117,7 @@ const AlertForm = ({ product }: AlertFormProps) => {
               </div>
               
               <div>
-                <span className="block text-sm font-medium text-gray-700 mb-2">
+                <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Quick select discount
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -128,7 +128,7 @@ const AlertForm = ({ product }: AlertFormProps) => {
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                         Math.round(lowestPrice * (100 - discount) / 100) === targetPrice
                           ? 'bg-primary text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
                       {discount}% off
@@ -137,8 +137,8 @@ const AlertForm = ({ product }: AlertFormProps) => {
                 </div>
               </div>
               
-              <div className="text-sm text-gray-600">
-                <p>Current lowest price: <span className="font-medium">{lowestPrice.toFixed(2)} AED</span></p>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                <p>Current lowest price: <span className="font-medium dark:text-white">{lowestPrice.toFixed(2)} AED</span></p>
                 <p>Your target: <span className="font-medium text-primary">{targetPrice.toFixed(2)} AED</span></p>
               </div>
               

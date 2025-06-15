@@ -16,14 +16,14 @@ public class PriceApiService {
 
     public List<ProductDocument> fetchProductData(String retailer, String query) {
         if ("amazon".equalsIgnoreCase(retailer)) {
-            return amazonApiService.searchProducts(query);
+            return amazonApiService.searchProducts(query).join();
         }
         return null;
     }
 
     public ProductDocument getProductDetails(String retailer, String id) {
         if ("amazon".equalsIgnoreCase(retailer)) {
-            return amazonApiService.getProductDetails(id);
+            return amazonApiService.getProductDetails(id).join();
         }
         return null;
     }

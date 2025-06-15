@@ -83,10 +83,10 @@ const HomePage = () => {
       {/* Hero Section */}
       <section 
         ref={heroRef}
-        className="relative bg-gradient-to-br from-primary to-primary-light py-20 md:py-32"
+        className="relative bg-gradient-to-br from-primary to-primary-light dark:from-primary/80 dark:to-primary-light/80 py-20 md:py-32"
       >
         <div className="container mx-auto px-4 md:px-6">
-          <motion.div 
+          <motion.div
             className="max-w-3xl mx-auto text-center"
             initial="hidden"
             animate={heroInView ? "visible" : "hidden"}
@@ -114,10 +114,10 @@ const HomePage = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search for products, brands, or categories..."
-                    className="w-full px-6 py-4 pr-12 rounded-full text-base shadow-lg focus:outline-none focus:ring-2 focus:ring-white/50"
+                    className="w-full px-6 py-4 pr-12 rounded-full text-base shadow-lg focus:outline-none focus:ring-2 focus:ring-white/50 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
                   />
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-primary text-white p-2 rounded-full hover:bg-primary/90 transition-colors"
                   >
                     <ArrowRight size={20} />
@@ -139,7 +139,8 @@ const HomePage = () => {
         <div className="absolute bottom-0 left-0 right-0 h-16 md:h-24">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="w-full h-full">
             <path
-              fill="#ffffff"
+              fill="currentColor"
+              className="text-white dark:text-background-dark"
               fillOpacity="1"
               d="M0,192L48,202.7C96,213,192,235,288,224C384,213,480,171,576,165.3C672,160,768,192,864,197.3C960,203,1056,181,1152,160C1248,139,1344,117,1392,106.7L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
             ></path>
@@ -150,10 +151,10 @@ const HomePage = () => {
       {/* Featured Products */}
       <section 
         ref={featuredRef}
-        className="py-16 bg-white"
+        className="py-16 bg-white dark:bg-background-dark"
       >
         <div className="container mx-auto px-4 md:px-6">
-          <motion.div 
+          <motion.div
             className="text-center mb-12"
             initial="hidden"
             animate={featuredInView ? "visible" : "hidden"}
@@ -166,7 +167,7 @@ const HomePage = () => {
               Best Deals Today
             </motion.h2>
             <motion.p 
-              className="text-gray-600 max-w-2xl mx-auto"
+              className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto"
               variants={itemVariants}
             >
               We've found the best price drops and deals across UAE's top online retailers.
@@ -209,10 +210,10 @@ const HomePage = () => {
       {/* Categories Section */}
       <section 
         ref={categoriesRef}
-        className="py-16 bg-gray-50"
+        className="py-16 bg-gray-50 dark:bg-gray-900"
       >
         <div className="container mx-auto px-4 md:px-6">
-          <motion.div 
+          <motion.div
             className="text-center mb-12"
             initial="hidden"
             animate={categoriesInView ? "visible" : "hidden"}
@@ -225,7 +226,7 @@ const HomePage = () => {
               Shop by Category
             </motion.h2>
             <motion.p 
-              className="text-gray-600 max-w-2xl mx-auto"
+              className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto"
               variants={itemVariants}
             >
               Browse our most popular categories.
@@ -241,7 +242,7 @@ const HomePage = () => {
             {categories.map((category, index) => (
               <motion.div 
                 key={index}
-                className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-all text-center cursor-pointer"
+                className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-md transition-all text-center cursor-pointer"
                 variants={itemVariants}
                 onClick={() => navigate(`/search?q=${encodeURIComponent(category)}`)}
               >
@@ -255,10 +256,10 @@ const HomePage = () => {
       {/* Benefits Section */}
       <section 
         ref={benefitsRef}
-        className="py-16 bg-white"
+        className="py-16 bg-white dark:bg-background-dark"
       >
         <div className="container mx-auto px-4 md:px-6">
-          <motion.div 
+          <motion.div
             className="text-center mb-12"
             initial="hidden"
             animate={benefitsInView ? "visible" : "hidden"}
@@ -271,7 +272,7 @@ const HomePage = () => {
               Why Choose Findr
             </motion.h2>
             <motion.p 
-              className="text-gray-600 max-w-2xl mx-auto"
+              className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto"
               variants={itemVariants}
             >
               We help you save time and money by finding the best prices across UAE's top online retailers.
@@ -287,14 +288,14 @@ const HomePage = () => {
             {benefitItems.map((item, index) => (
               <motion.div 
                 key={index}
-                className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-all"
+                className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-md transition-all"
                 variants={itemVariants}
               >
                 <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                   {item.icon}
                 </div>
                 <h3 className="text-xl font-semibold mb-3">{item.title}</h3>
-                <p className="text-gray-600">{item.description}</p>
+                <p className="text-gray-600 dark:text-gray-400">{item.description}</p>
               </motion.div>
             ))}
           </motion.div>

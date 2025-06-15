@@ -91,6 +91,38 @@ public class FirebaseService {
             return List.of();
         }
     }
+
+    public List<ProductDocument> searchProductsByName(String query) {
+        DatabaseReference ref = database.getReference("products");
+        CompletableFuture<List<ProductDocument>> future = new CompletableFuture<>();
+        String lowerCaseQuery = query.toLowerCase();
+
+        ref.orderByChild("name").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                List<ProductDocument> products = new ArrayList<>();
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    ProductDocument product = snapshot.getValue(ProductDocument.class);
+                    if (product != null && product.getName() != null && product.getName().toLowerCase().contains(lowerCaseQuery)) {
+                        products.add(product);
+                    }
+                }
+                future.complete(products);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                future.completeExceptionally(databaseError.toException());
+            }
+        });
+
+        try {
+            return future.get();
+        } catch (Exception e) {
+            logger.error("Error searching products by name", e);
+            return List.of();
+        }
+    }
 public void saveUser(com.example.price_comparator.model.User user) {
         if (user == null || user.getUid() == null) {
             logger.error("Cannot save a null user or a user with a null UID.");

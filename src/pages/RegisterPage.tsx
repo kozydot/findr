@@ -12,7 +12,7 @@ const RegisterPage = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { register } = useAuth();
+  const { register, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,11 +47,12 @@ const RegisterPage = () => {
     }
   };
   
-  const handleSocialSignup = async (provider: string) => {
+  const handleSocialSignup = async (provider: 'google') => {
     try {
       setIsLoading(true);
-      // For the mock: simulate a successful social signup
-      await register('Demo User', 'demo@example.com', 'password', provider);
+      if (provider === 'google') {
+        await signInWithGoogle();
+      }
       navigate('/');
     } catch (err: any) {
       setError(err.message || `Failed to sign up with ${provider}`);
@@ -175,28 +176,18 @@ const RegisterPage = () => {
             
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">Or sign up with</p>
-              <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="mt-3 grid grid-cols-1 gap-3">
                 <button
                   onClick={() => handleSocialSignup('google')}
                   className="btn bg-white border border-gray-300 hover:bg-gray-50 flex items-center justify-center py-2"
                   disabled={isLoading}
                 >
-                  <img 
-                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+                  <img
+                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                     alt="Google"
                     className="w-5 h-5 mr-2"
                   />
                   Google
-                </button>
-                <button
-                  onClick={() => handleSocialSignup('facebook')}
-                  className="btn bg-[#1877F2] text-white hover:bg-[#1877F2]/90 flex items-center justify-center py-2"
-                  disabled={isLoading}
-                >
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 mr-2" fill="currentColor">
-                    <path d="M9.19795 21.5H13.198V13.4901H16.8021L17.198 9.50977H13.198V7.5C13.198 6.94772 13.6457 6.5 14.198 6.5H17.198V2.5H14.198C11.4365 2.5 9.19795 4.73858 9.19795 7.5V9.50977H7.19795L6.80206 13.4901H9.19795V21.5Z" />
-                  </svg>
-                  Facebook
                 </button>
               </div>
             </div>

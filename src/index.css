@@ -8,11 +8,11 @@
   }
   
   body {
-    @apply font-sans text-secondary-light bg-background-light;
+    @apply font-sans text-secondary-light bg-background-light dark:bg-background-dark dark:text-gray-300;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold text-secondary leading-tight;
+    @apply font-semibold text-secondary leading-tight dark:text-white;
   }
   
   h1 {
@@ -46,19 +46,19 @@
   }
   
   .btn-secondary {
-    @apply bg-secondary text-white hover:bg-secondary/90 active:bg-secondary/80;
+    @apply bg-secondary text-white hover:bg-secondary/90 active:bg-secondary/80 dark:bg-gray-700 dark:hover:bg-gray-600;
   }
   
   .btn-outline {
-    @apply border border-primary text-primary bg-transparent hover:bg-primary/10;
+    @apply border border-primary text-primary bg-transparent hover:bg-primary/10 dark:hover:bg-primary/20;
   }
   
   .input {
-    @apply px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all w-full;
+    @apply px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all w-full bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white;
   }
   
   .card {
-    @apply bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden;
+    @apply bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden dark:bg-gray-800 dark:border dark:border-gray-700;
   }
   
   .floating-search {

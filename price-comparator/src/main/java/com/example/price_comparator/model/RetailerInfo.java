@@ -16,7 +16,6 @@ public class RetailerInfo {
     private String name;
     private String logo;
     private double currentPrice;
-    private List<PriceHistoryPoint> priceHistory = new ArrayList<>();
     private boolean inStock;
     private boolean freeShipping;
     private double shippingCost;

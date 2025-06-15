@@ -103,9 +103,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
                   <img
                     src={bestRetailer.logo}
                     alt={bestRetailer.name}
-                    className="h-5 mr-2"
+                    className="h-5 mr-2 dark:invert"
                   />
-                  <span className="font-semibold text-secondary">{bestRetailer.name}</span>
+                  <span className="font-semibold text-secondary dark:text-gray-300">{bestRetailer.name}</span>
                 </div>
                 <div className="text-xl font-bold text-primary">
                   {lowestPrice.toFixed(2)} {product.currency}

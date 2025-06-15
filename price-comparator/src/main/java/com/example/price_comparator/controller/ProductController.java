@@ -1,6 +1,6 @@
 package com.example.price_comparator.controller;
 
-import com.example.price_comparator.dto.ComparisonResult;
+import com.example.price_comparator.dto.ComparisonResponse;
 import com.example.price_comparator.model.ProductDocument;
 import com.example.price_comparator.service.ProductService;
 // Import ScrapingService if you want to add a manual trigger endpoint
@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/v1/products")
@@ -45,11 +46,51 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProductDocument> getProductById(@PathVariable String id) {
+    public CompletableFuture<ResponseEntity<ProductDocument>> getProductById(@PathVariable String id) {
         logger.info("Received request for product with ID: {}", id);
-        Optional<ProductDocument> product = productService.getProductById(id);
-        return product.map(ResponseEntity::ok)
-                      .orElseGet(() -> ResponseEntity.notFound().build());
+        return productService.getProductById(id)
+            .thenCompose(product -> {
+                if (product != null) {
+                    return CompletableFuture.completedFuture(ResponseEntity.ok(product));
+                }
+                return productService.fetchAndSaveProduct(id)
+                    .thenApply(fetchedProduct -> {
+                        if (fetchedProduct != null) {
+                            return ResponseEntity.ok(fetchedProduct);
+                        }
+                        return ResponseEntity.notFound().build();
+                    });
+            });
+    }
+
+    @PostMapping("/{id}/enrich")
+    public ResponseEntity<Void> enrichProduct(@PathVariable String id) {
+        productService.getProductById(id).thenAccept(product -> {
+            if (product != null) {
+                productService.enrichProduct(product);
+            }
+        });
+        return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/{id}/compare")
+    public ResponseEntity<String> startShoppingComparison(@PathVariable String id) {
+        return productService.getProductById(id)
+            .thenApply(product -> {
+                if (product != null) {
+                    String taskId = productService.startShoppingComparison(product);
+                    return ResponseEntity.ok(taskId);
+                }
+                return ResponseEntity.status(404).body("Product not found");
+            })
+            .exceptionally(ex -> ResponseEntity.status(500).body("Error starting comparison")).join();
+    }
+
+    @GetMapping("/comparison/{taskId}")
+    public ResponseEntity<ProductDocument> getComparisonResult(@PathVariable String taskId) {
+        return productService.getComparisonResult(taskId)
+            .map(ResponseEntity::ok)
+            .orElseGet(() -> ResponseEntity.accepted().build());
     }
 
     @GetMapping("/search")
@@ -75,29 +116,5 @@ public class ProductController {
         List<String> categories = productService.getAmazonCategories();
         return ResponseEntity.ok(categories);
     }
-
-
-    // Example endpoint to manually trigger a scrape for a specific Noon URL (for testing)
-    // This is optional and might be removed or secured in a production environment.
-    /*
-    @PostMapping("/scrape/noon")
-    public ResponseEntity<?> triggerNoonScrape(@RequestBody String productUrl) {
-        if (productUrl == null || productUrl.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body("Product URL is required.");
-        }
-        logger.info("Received manual scrape request for Noon URL: {}", productUrl);
-        ProductDocument scrapedProduct = scrapingService.scrapeProductFromNoon(productUrl);
-        if (scrapedProduct != null) {
-            productService.saveProduct(scrapedProduct);
-            return ResponseEntity.ok(scrapedProduct);
-        } else {
-            return ResponseEntity.status(500).body("Failed to scrape product from Noon.");
-        }
-    }
-    */
-
-    // TODO: Add POST/PUT/DELETE endpoints if direct product management via API is needed.
-    // TODO: Implement proper error handling and response statuses.
-    // TODO: Configure CORS properly. The @CrossOrigin annotation is commented out;
-    //       a global CORS configuration is generally preferred (e.g., in a WebMvcConfigurer bean).
+    
 }

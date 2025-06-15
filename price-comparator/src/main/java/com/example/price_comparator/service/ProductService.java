@@ -7,11 +7,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,9 +25,12 @@ public class ProductService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProductService.class);
 
+    private final Set<String> comparisonInProgress = ConcurrentHashMap.newKeySet();
+    private final ConcurrentHashMap<String, CompletableFuture<ProductDocument>> comparisonResults = new ConcurrentHashMap<>();
     private final FirebaseService firebaseService;
     private final AmazonApiService amazonApiService;
     private final ShoppingService shoppingService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Value("${oxylabs.username}")
     private String username;
@@ -30,10 +39,11 @@ public class ProductService {
     private String password;
 
     @Autowired
-    public ProductService(FirebaseService firebaseService, AmazonApiService amazonApiService, ShoppingService shoppingService) {
+    public ProductService(FirebaseService firebaseService, AmazonApiService amazonApiService, ShoppingService shoppingService, SimpMessagingTemplate messagingTemplate) {
         this.firebaseService = firebaseService;
         this.amazonApiService = amazonApiService;
         this.shoppingService = shoppingService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     public List<ProductDocument> getFeaturedProducts(int limit) {
@@ -50,29 +60,33 @@ public class ProductService {
         return allProducts.subList(0, Math.min(10, allProducts.size()));
     }
 
-    public Optional<ProductDocument> getProductById(String id) {
-        logger.info("Fetching product by ID: {}", id);
-        try {
-            ProductDocument product;
-            try {
-                product = firebaseService.getProduct(id).get();
-            } catch (Exception e) {
-                logger.warn("Product {} not found in Firebase or error fetching: {}", id, e.getMessage());
-                product = null;
-            }
+    public CompletableFuture<ProductDocument> getProductById(String id) {
+        return firebaseService.getProduct(id);
+    }
 
-            if (product == null) {
-                logger.info("Product not found in Firebase. Fetching from Amazon API.");
-                product = amazonApiService.getProductDetails(id);
-                if (product == null) {
-                    logger.error("Product with ID {} not found in Amazon either.", id);
-                    return Optional.empty();
+    public CompletableFuture<ProductDocument> fetchAndSaveProduct(String id) {
+        return amazonApiService.getProductDetails(id)
+            .thenApply(product -> {
+                if (product != null) {
+                    saveProduct(product);
                 }
-            } else {
-                logger.info("Product found in Firebase. Checking if details are complete.");
-                if (product.getDescription() == null || product.getDescription().isEmpty() || product.getSpecifications() == null || product.getSpecifications().isEmpty()) {
-                    logger.info("Enriching existing product with full details from Amazon.");
-                    ProductDocument fullDetails = amazonApiService.getProductDetails(product.getId());
+                return product;
+            });
+    }
+
+    public String startShoppingComparison(ProductDocument product) {
+        String taskId = UUID.randomUUID().toString();
+        CompletableFuture<ProductDocument> future = triggerShoppingComparison(product, taskId);
+        comparisonResults.put(taskId, future);
+        return taskId;
+    }
+
+    @Async("taskExecutor")
+    public void enrichProduct(ProductDocument product) {
+        if (product.getDescription() == null || product.getDescription().isEmpty()) {
+            logger.info("Enriching existing product with full details from Amazon.");
+            amazonApiService.getProductDetails(product.getId())
+                .thenAccept(fullDetails -> {
                     if (fullDetails != null) {
                         if (product.getDescription() == null || product.getDescription().isEmpty()) {
                             product.setDescription(fullDetails.getDescription());
@@ -83,46 +97,38 @@ public class ProductService {
                         if (product.getAbout() == null || product.getAbout().isEmpty()) {
                             product.setAbout(fullDetails.getAbout());
                         }
+                        saveProduct(product);
+                        messagingTemplate.convertAndSend("/topic/products/" + product.getId(), product);
                     }
-                }
-            }
+                });
+        }
+    }
 
-            final ProductDocument finalProduct = product;
+    public Optional<ProductDocument> getComparisonResult(String taskId) {
+        CompletableFuture<ProductDocument> future = comparisonResults.get(taskId);
+        if (future != null && future.isDone()) {
+            comparisonResults.remove(taskId);
+            return Optional.ofNullable(future.join());
+        }
+        return Optional.empty();
+    }
 
-            if (finalProduct.getRetailers() == null || finalProduct.getRetailers().size() <= 1) {
-                logger.info("Proceeding with Shopping comparison for: {}", finalProduct.getName());
-                List<ShoppingProduct> shoppingProducts = shoppingService.findOffers(finalProduct.getName(), username, password);
+    @Async("taskExecutor")
+    public CompletableFuture<ProductDocument> triggerShoppingComparison(ProductDocument product, String taskId) {
+        return CompletableFuture.supplyAsync(() -> {
+            if (product.getRetailers() == null || product.getRetailers().size() <= 1) {
+                logger.info("Proceeding with Shopping comparison for: {}", product.getName());
+                List<ShoppingProduct> shoppingProducts = shoppingService.findOffers(product.getName(), username, password);
                 if (!shoppingProducts.isEmpty()) {
-                    logger.info("Found {} offers on Shopping for: {}", shoppingProducts.size(), finalProduct.getName());
-
-                    // This logic is now redundant as we fetch from Amazon directly.
-                    // However, we can keep it as a fallback for non-Amazon products if needed in the future.
-                    if (finalProduct.getDescription() == null || finalProduct.getDescription().isEmpty() || finalProduct.getSpecifications() == null || finalProduct.getSpecifications().isEmpty()) {
-                        shoppingProducts.stream()
-                            .filter(p -> (p.getDescription() != null && !p.getDescription().isEmpty()) || (p.getSpecifications() != null && !p.getSpecifications().isEmpty()))
-                            .findFirst()
-                            .ifPresent(p -> {
-                                if (finalProduct.getDescription() == null || finalProduct.getDescription().isEmpty()) {
-                                    finalProduct.setDescription(p.getDescription());
-                                    logger.info("Updated product description from shopping results as a fallback.");
-                                }
-                                if (finalProduct.getSpecifications() == null || finalProduct.getSpecifications().isEmpty()) {
-                                    finalProduct.setSpecifications(p.getSpecifications());
-                                    logger.info("Updated product specifications from shopping results as a fallback.");
-                                }
-                            });
-                    }
-
-                    List<RetailerInfo> offers = shoppingProducts.stream()
+                    logger.info("Found {} offers on Shopping for: {}", shoppingProducts.size(), product.getName());
+                    List<RetailerInfo> offers = shoppingProducts.parallelStream()
                         .map(this::mapToRetailerInfo)
                         .collect(Collectors.toList());
-
                     List<RetailerInfo> allOffers = new ArrayList<>();
-                    if (finalProduct.getRetailers() != null) {
-                        allOffers.addAll(finalProduct.getRetailers());
+                    if (product.getRetailers() != null) {
+                        allOffers.addAll(product.getRetailers());
                     }
                     allOffers.addAll(offers);
-
                     java.util.Map<String, RetailerInfo> bestOffers = allOffers.stream()
                         .filter(offer -> offer.getName() != null && offer.getProductUrl() != null && !offer.getProductUrl().isEmpty())
                         .collect(Collectors.toMap(
@@ -130,28 +136,21 @@ public class ProductService {
                             offer -> offer,
                             (offer1, offer2) -> offer1.getCurrentPrice() < offer2.getCurrentPrice() ? offer1 : offer2
                         ));
-                    
                     List<RetailerInfo> finalOffers = bestOffers.values().stream()
                         .sorted(java.util.Comparator.comparingDouble(RetailerInfo::getCurrentPrice))
                         .limit(5)
                         .collect(Collectors.toList());
-
-                    finalProduct.setRetailers(finalOffers);
+                    product.setRetailers(finalOffers);
                     logger.info("Saving {} unique offers.", finalOffers.size());
-                    saveProduct(finalProduct);
+                    saveProduct(product);
                 } else {
-                    logger.warn("No Shopping offers found for: {}", finalProduct.getName());
+                    logger.warn("No Shopping offers found for: {}", product.getName());
                 }
             } else {
-                logger.info("Skipping Shopping search as comparison data already exists for: {}", finalProduct.getName());
+                logger.info("Skipping Shopping search as comparison data already exists for: {}", product.getName());
             }
-            
-            return Optional.of(finalProduct);
-
-        } catch (Exception e) {
-            logger.error("Error fetching product by ID: {}", id, e);
-            return Optional.empty();
-        }
+            return product;
+        });
     }
 
     public List<ProductDocument> getAllProducts() {
@@ -166,40 +165,20 @@ public class ProductService {
         if (query == null || query.trim().isEmpty()) {
             return getAllProducts();
         }
-        
-        List<ProductDocument> searchResults = amazonApiService.searchProducts(query);
-        
-        return searchResults.parallelStream()
-            .map(productSummary -> {
-                try {
-                    // First, check if a fully detailed product exists in Firebase
-                    Optional<ProductDocument> existingProductOpt = firebaseService.getProduct(productSummary.getId())
-                        .thenApply(Optional::ofNullable)
-                        .exceptionally(ex -> {
-                            logger.warn("Failed to fetch product {} from Firebase, will fetch from Amazon.", productSummary.getId());
-                            return Optional.empty();
-                        }).join();
 
-                    if (existingProductOpt.isPresent() && existingProductOpt.get().getDescription() != null) {
-                        logger.info("Found complete product {} in cache.", productSummary.getId());
-                        return existingProductOpt.get();
-                    }
+        // First, search in Firebase
+        List<ProductDocument> localResults = firebaseService.searchProductsByName(query);
+        if (!localResults.isEmpty()) {
+            logger.info("Found {} products in Firebase for query: {}", localResults.size(), query);
+            localResults.forEach(this::retainOnlyAmazonRetailer);
+            return localResults;
+        }
 
-                    // If not, fetch full details from Amazon
-                    logger.info("Fetching full details for product {}.", productSummary.getId());
-                    ProductDocument detailedProduct = amazonApiService.getProductDetails(productSummary.getId());
-                    if (detailedProduct != null) {
-                        saveProduct(detailedProduct);
-                        return detailedProduct;
-                    }
-                    return null;
-                } catch (Exception e) {
-                    logger.error("Failed to process product {}", productSummary.getId(), e);
-                    return null;
-                }
-            })
-            .filter(java.util.Objects::nonNull)
-            .collect(Collectors.toList());
+        // If not found in Firebase, then search Amazon
+        logger.info("No products found in Firebase for query: {}. Searching Amazon...", query);
+        List<ProductDocument> searchResults = amazonApiService.searchProducts(query).join();
+        searchResults.forEach(this::saveProduct);
+        return searchResults;
     }
 
     private void retainOnlyAmazonRetailer(ProductDocument product) {

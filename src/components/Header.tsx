@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Search, Menu, X, ShoppingCart, Bell, User } from 'lucide-react';
 import SearchBar from './SearchBar';
+import ThemeToggle from './ThemeToggle';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -40,7 +41,7 @@ const Header = () => {
   const isHomePage = location.pathname === '/';
   
   return (
-    <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled || !isHomePage ? 'bg-white shadow-sm' : 'bg-transparent'}`}>
+    <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled || !isHomePage ? 'bg-white dark:bg-gray-800 shadow-sm' : 'bg-transparent'}`}>
       <div className="container mx-auto px-4 md:px-6">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
@@ -50,22 +51,22 @@ const Header = () => {
           
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link 
-              to="/" 
-              className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/' ? 'text-primary' : 'text-secondary'}`}
+            <Link
+              to="/"
+              className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/' ? 'text-primary' : 'text-secondary dark:text-gray-300'}`}
             >
               Home
             </Link>
-            <Link 
-              to="/search" 
-              className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/search' ? 'text-primary' : 'text-secondary'}`}
+            <Link
+              to="/search"
+              className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/search' ? 'text-primary' : 'text-secondary dark:text-gray-300'}`}
             >
               Compare
             </Link>
             {isAuthenticated && (
-              <Link 
-                to="/alerts" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/alerts' ? 'text-primary' : 'text-secondary'}`}
+              <Link
+                to="/alerts"
+                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/alerts' ? 'text-primary' : 'text-secondary dark:text-gray-300'}`}
               >
                 My Alerts
               </Link>
@@ -82,7 +83,8 @@ const Header = () => {
             
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
-                <Link to="/alerts" className="text-secondary hover:text-primary transition-colors">
+                <ThemeToggle />
+                <Link to="/alerts" className="text-secondary dark:text-gray-300 hover:text-primary transition-colors">
                   <Bell size={20} />
                 </Link>
                 <div className="relative group">
@@ -107,7 +109,8 @@ const Header = () => {
               </div>
             ) : (
               <div className="flex items-center space-x-4">
-                <Link to="/login" className="text-sm font-medium text-secondary hover:text-primary transition-colors">
+                <ThemeToggle />
+                <Link to="/login" className="text-sm font-medium text-secondary dark:text-gray-300 hover:text-primary transition-colors">
                   Login
                 </Link>
                 <Link to="/register" className="btn btn-primary text-sm py-2">
@@ -120,7 +123,7 @@ const Header = () => {
           {/* Mobile Menu Button */}
           <button 
             onClick={toggleMenu}
-            className="md:hidden flex items-center text-secondary focus:outline-none"
+            className="md:hidden flex items-center text-secondary dark:text-gray-300 focus:outline-none"
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -128,32 +131,36 @@ const Header = () => {
       </div>
       
       {/* Mobile Menu */}
-      <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${isMenuOpen ? 'max-h-screen py-4' : 'max-h-0'}`}>
+      <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out bg-white dark:bg-gray-800 ${isMenuOpen ? 'max-h-screen py-4' : 'max-h-0'}`}>
         <div className="container mx-auto px-4 space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-semibold dark:text-white">Menu</span>
+            <ThemeToggle />
+          </div>
           {!isHomePage && (
             <SearchBar />
           )}
           
           <nav className="flex flex-col space-y-4">
-            <Link to="/" className="text-secondary hover:text-primary py-2">Home</Link>
-            <Link to="/search" className="text-secondary hover:text-primary py-2">Compare</Link>
+            <Link to="/" className="text-secondary dark:text-gray-300 hover:text-primary py-2">Home</Link>
+            <Link to="/search" className="text-secondary dark:text-gray-300 hover:text-primary py-2">Compare</Link>
             {isAuthenticated && (
-              <Link to="/alerts" className="text-secondary hover:text-primary py-2">My Alerts</Link>
+              <Link to="/alerts" className="text-secondary dark:text-gray-300 hover:text-primary py-2">My Alerts</Link>
             )}
             
             {isAuthenticated ? (
               <>
-                <Link to="/profile" className="text-secondary hover:text-primary py-2">Profile</Link>
-                <button 
+                <Link to="/profile" className="text-secondary dark:text-gray-300 hover:text-primary py-2">Profile</Link>
+                <button
                   onClick={handleLogout}
-                  className="text-left text-secondary hover:text-primary py-2"
+                  className="text-left text-secondary dark:text-gray-300 hover:text-primary py-2"
                 >
                   Logout
                 </button>
               </>
             ) : (
               <div className="flex flex-col space-y-2 pt-2">
-                <Link to="/login" className="text-secondary hover:text-primary py-2">Login</Link>
+                <Link to="/login" className="text-secondary dark:text-gray-300 hover:text-primary py-2">Login</Link>
                 <Link to="/register" className="btn btn-primary">Sign Up</Link>
               </div>
             )}
