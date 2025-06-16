@@ -5,7 +5,6 @@ Findr is a powerful price comparison engine that helps you find the best deals o
 ## Features
 
 *   **Real-time Price Tracking:** Monitor prices across major UAE retailers.
-*   **Price History Charts:** View historical price data to make informed purchasing decisions.
 *   **Bookmarks:** Save your favorite products to a personalized list.
 
 ## Tech Stack
