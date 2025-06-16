@@ -1,29 +1,3 @@
-# Findr: Price Comparison Engine
-
-Findr is a powerful price comparison engine that helps you find the best deals on your favorite products across UAE's top e-commerce platforms.
-
-## Features
-
-*   **Real-time Price Tracking:** Monitor prices across major UAE retailers.
-*   **Bookmarks:** Save your favorite products to a personalized list.
-
-## Tech Stack
-
-*   **Frontend:** React, TypeScript, Vite, Tailwind CSS
-*   **Backend:** Java, Spring Boot, Maven
-*   **Database:** Firebase Realtime Database
-*   **Authentication:** Firebase Authentication
-
-## Prerequisites
-
-*   Node.js (v18 or higher)
-*   npm (v8 or higher)
-*   Java (v17 or higher)
-*   Maven (v3.6 or higher)
-*   Firebase Account
-
-## Getting Started
-
 ### 1. Clone the Repository
 
 ```bash
