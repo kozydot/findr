@@ -62,13 +62,13 @@ const RegisterPage = () => {
   };
   
   return (
-    <div className="min-h-screen py-12 bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen py-12 bg-gray-50 dark:bg-background-dark flex items-center justify-center">
       <div className="w-full max-w-md mx-auto">
-        <div className="bg-white shadow-sm rounded-xl overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
           <div className="p-6 sm:p-8">
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-secondary">Create your account</h1>
-              <p className="text-gray-600 mt-2">Join Findr to save on your favorite products</p>
+              <h1 className="text-2xl font-bold text-secondary dark:text-white">Create your account</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">Join Findr to save on your favorite products</p>
             </div>
             
             {error && (
@@ -80,7 +80,7 @@ const RegisterPage = () => {
             
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Full Name
                 </label>
                 <div className="relative">
@@ -98,7 +98,7 @@ const RegisterPage = () => {
               </div>
               
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Email
                 </label>
                 <div className="relative">
@@ -116,7 +116,7 @@ const RegisterPage = () => {
               </div>
               
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Password
                 </label>
                 <div className="relative">
@@ -138,13 +138,13 @@ const RegisterPage = () => {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Must be at least 8 characters
                 </p>
               </div>
               
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Confirm Password
                 </label>
                 <div className="relative">
@@ -175,11 +175,11 @@ const RegisterPage = () => {
             </form>
             
             <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">Or sign up with</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Or sign up with</p>
               <div className="mt-3 grid grid-cols-1 gap-3">
                 <button
                   onClick={() => handleSocialSignup('google')}
-                  className="btn bg-white border border-gray-300 hover:bg-gray-50 flex items-center justify-center py-2"
+                  className="btn bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center py-2"
                   disabled={isLoading}
                 >
                   <img
@@ -193,7 +193,7 @@ const RegisterPage = () => {
             </div>
             
             <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 By signing up, you agree to our{' '}
                 <Link to="/terms" className="text-primary hover:underline">
                   Terms of Service
@@ -206,7 +206,7 @@ const RegisterPage = () => {
             </div>
             
             <div className="mt-8 text-center">
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Already have an account?{' '}
                 <Link to="/login" className="text-primary font-medium hover:underline">
                   Log in

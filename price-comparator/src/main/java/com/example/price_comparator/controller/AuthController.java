@@ -7,7 +7,10 @@ import com.google.firebase.auth.UserRecord;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,4 +47,23 @@ public class AuthController {
         }
     }
 
+    @PutMapping("/password/{uid}")
+    public ResponseEntity<?> changePassword(@PathVariable String uid, @RequestBody User user) {
+        try {
+            authService.changePassword(uid, user.getPassword());
+            return ResponseEntity.ok().build();
+        } catch (FirebaseAuthException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{uid}")
+    public ResponseEntity<?> deleteUser(@PathVariable String uid) {
+        try {
+            authService.deleteUser(uid);
+            return ResponseEntity.ok().build();
+        } catch (FirebaseAuthException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
 }

@@ -52,13 +52,13 @@ const LoginPage = () => {
   };
   
   return (
-    <div className="min-h-screen py-12 bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen py-12 bg-gray-50 dark:bg-background-dark flex items-center justify-center">
       <div className="w-full max-w-md mx-auto">
-        <div className="bg-white shadow-sm rounded-xl overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
           <div className="p-6 sm:p-8">
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-secondary">Welcome back</h1>
-              <p className="text-gray-600 mt-2">Login to your account to continue</p>
+              <h1 className="text-2xl font-bold text-secondary dark:text-white">Welcome back</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">Login to your account to continue</p>
             </div>
             
             {error && (
@@ -70,7 +70,7 @@ const LoginPage = () => {
             
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Email
                 </label>
                 <div className="relative">
@@ -89,7 +89,7 @@ const LoginPage = () => {
               
               <div>
                 <div className="flex justify-between mb-1">
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Password
                   </label>
                   <Link to="/forgot-password" className="text-sm text-primary hover:underline">
@@ -134,11 +134,11 @@ const LoginPage = () => {
             </form>
             
             <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">Or continue with</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Or continue with</p>
               <div className="mt-3">
                 <button
                   onClick={() => handleSocialLogin('google')}
-                  className="btn bg-white border border-gray-300 hover:bg-gray-50 flex items-center justify-center py-2 w-full"
+                  className="btn bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center py-2 w-full"
                   disabled={isLoading}
                 >
                   <img
@@ -152,7 +152,7 @@ const LoginPage = () => {
             </div>
             
             <div className="mt-8 text-center">
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Don't have an account?{' '}
                 <Link to="/register" className="text-primary font-medium hover:underline">
                   Sign up

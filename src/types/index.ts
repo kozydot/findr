@@ -31,6 +31,7 @@ export interface Product {
   specifications?: Specification[];
   price?: string;
   currency?: string;
+  bookmarked?: boolean;
 }
 
 export interface Alert {

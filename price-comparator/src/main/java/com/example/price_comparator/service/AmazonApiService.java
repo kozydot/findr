@@ -215,6 +215,17 @@ public class AmazonApiService implements RetailerApiService {
                             else if (title.contains("redragon")) brand = "Redragon";
                         }
                         product.setBrand(brand);
+
+                        // Extract other attributes
+                        String model = extractAttribute(specifications, "model");
+                        if (model == null) {
+                            model = extractModelFromTitle(product.getName());
+                        }
+                        product.setModel(model);
+
+                        product.setStorage(extractAttribute(specifications, "storage capacity"));
+                        product.setRam(extractAttribute(specifications, "ram"));
+                        product.setColor(extractAttribute(specifications, "color"));
                     }
 
                     product.setPhotos(productJson.getJSONArray("product_photos").toList().stream().map(Object::toString).collect(Collectors.toList()));
@@ -252,5 +263,47 @@ public class AmazonApiService implements RetailerApiService {
                     System.err.println("Error getting Amazon product details: " + e.getMessage());
                     return null;
                 });
+    }
+
+    private String extractAttribute(List<SpecificationInfo> specifications, String attributeName) {
+        return specifications.stream()
+                .filter(s -> attributeName.equalsIgnoreCase(s.getName()))
+                .map(SpecificationInfo::getValue)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String extractModelFromTitle(String title) {
+        String lowerCaseTitle = title.toLowerCase();
+        if (lowerCaseTitle.contains("iphone")) {
+            return extractToken(title, "iPhone");
+        }
+        if (lowerCaseTitle.contains("galaxy")) {
+            return extractToken(title, "Galaxy");
+        }
+        if (lowerCaseTitle.contains("macbook")) {
+            return extractToken(title, "MacBook");
+        }
+        if (lowerCaseTitle.contains("dell")) {
+            return extractToken(title, "Dell");
+        }
+        if (lowerCaseTitle.contains("hp")) {
+            return extractToken(title, "HP");
+        }
+        if (lowerCaseTitle.contains("lenovo")) {
+            return extractToken(title, "Lenovo");
+        }
+        return null;
+    }
+
+    private String extractToken(String title, String brand) {
+        String[] parts = title.split(brand);
+        if (parts.length > 1) {
+            String[] modelParts = parts[1].trim().split(" ");
+            if (modelParts.length > 0) {
+                return modelParts[0];
+            }
+        }
+        return null;
     }
 }

@@ -45,4 +45,15 @@ public class AuthService {
         UserRecord userRecord = firebaseAuth.getUserByEmail(user.getEmail());
         return firebaseAuth.createCustomToken(userRecord.getUid());
     }
+
+    public void changePassword(String uid, String newPassword) throws FirebaseAuthException {
+        UserRecord.UpdateRequest request = new UserRecord.UpdateRequest(uid)
+                .setPassword(newPassword);
+        firebaseAuth.updateUser(request);
+    }
+
+    public void deleteUser(String uid) throws FirebaseAuthException {
+        firebaseAuth.deleteUser(uid);
+        firebaseService.deleteUser(uid);
+    }
 }

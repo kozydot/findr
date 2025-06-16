@@ -58,7 +58,7 @@
   }
   
   .card {
-    @apply bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden dark:bg-gray-800 dark:border dark:border-gray-700;
+    @apply bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden dark:bg-gray-800 dark:border dark:border-gray-700 hover:-translate-y-1;
   }
   
   .floating-search {

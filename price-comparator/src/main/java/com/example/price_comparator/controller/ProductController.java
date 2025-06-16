@@ -116,5 +116,23 @@ public class ProductController {
         List<String> categories = productService.getAmazonCategories();
         return ResponseEntity.ok(categories);
     }
-    
+
+    @PostMapping("/bookmarks/{userId}/{productId}")
+    public ResponseEntity<Void> addBookmark(@PathVariable String userId, @PathVariable String productId) {
+        productService.addBookmark(userId, productId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/bookmarks/{userId}/{productId}")
+    public ResponseEntity<Void> removeBookmark(@PathVariable String userId, @PathVariable String productId) {
+        productService.removeBookmark(userId, productId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/bookmarks/{userId}")
+    public CompletableFuture<ResponseEntity<List<ProductDocument>>> getBookmarks(@PathVariable String userId) {
+        return productService.getBookmarks(userId)
+                .thenApply(ResponseEntity::ok)
+                .exceptionally(ex -> ResponseEntity.status(500).build());
+    }
 }

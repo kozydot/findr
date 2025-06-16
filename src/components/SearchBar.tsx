@@ -71,13 +71,13 @@ const SearchBar = ({ minimal = false }: SearchBarProps) => {
         <div className={`
           relative flex items-center 
           ${minimal 
-            ? 'bg-gray-100 rounded-lg' 
-            : 'bg-white rounded-full shadow-lg floating-search'
+            ? 'bg-gray-100 dark:bg-gray-700 rounded-lg'
+            : 'bg-white dark:bg-gray-800 rounded-full shadow-lg floating-search'
           }`}
         >
           <Search 
             size={18} 
-            className={`absolute left-4 text-gray-400 ${minimal ? 'opacity-60' : ''}`} 
+            className={`absolute left-4 text-gray-400 dark:text-gray-500 ${minimal ? 'opacity-60' : ''}`}
           />
           <input
             ref={inputRef}
@@ -87,7 +87,7 @@ const SearchBar = ({ minimal = false }: SearchBarProps) => {
             onFocus={() => setIsFocused(true)}
             placeholder="Search for products, brands, or categories..."
             className={`
-              w-full bg-transparent border-none focus:outline-none focus:ring-0
+              w-full bg-transparent border-none focus:outline-none focus:ring-0 dark:text-white dark:placeholder-gray-400
               ${minimal 
                 ? 'pl-10 pr-10 py-2 text-sm' 
                 : 'pl-12 pr-12 py-4 text-base'
@@ -98,7 +98,7 @@ const SearchBar = ({ minimal = false }: SearchBarProps) => {
             <button 
               type="button"
               onClick={clearSearch}
-              className="absolute right-4 text-gray-400 hover:text-gray-600"
+              className="absolute right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
             >
               <X size={16} />
             </button>
@@ -108,15 +108,15 @@ const SearchBar = ({ minimal = false }: SearchBarProps) => {
       
       {/* Suggestions dropdown */}
       {isFocused && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden animate-fadeIn">
+        <div className="absolute z-50 w-full mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden animate-fadeIn">
           <ul>
             {suggestions.map((suggestion, index) => (
               <li key={index}>
                 <button
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center text-sm"
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center text-sm dark:text-white"
                 >
-                  <Search size={14} className="mr-2 text-gray-400" />
+                  <Search size={14} className="mr-2 text-gray-400 dark:text-gray-500" />
                   {suggestion}
                 </button>
               </li>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Search, Menu, X, ShoppingCart, Bell, User } from 'lucide-react';
+import { Search, Menu, X, ShoppingCart, Bookmark, User } from 'lucide-react';
 import SearchBar from './SearchBar';
 import ThemeToggle from './ThemeToggle';
 
@@ -65,10 +65,10 @@ const Header = () => {
             </Link>
             {isAuthenticated && (
               <Link
-                to="/alerts"
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/alerts' ? 'text-primary' : 'text-secondary dark:text-gray-300'}`}
+                to="/bookmarks"
+                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/bookmarks' ? 'text-primary' : 'text-secondary dark:text-gray-300'}`}
               >
-                My Alerts
+                My Bookmarks
               </Link>
             )}
           </nav>
@@ -84,8 +84,8 @@ const Header = () => {
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
                 <ThemeToggle />
-                <Link to="/alerts" className="text-secondary dark:text-gray-300 hover:text-primary transition-colors">
-                  <Bell size={20} />
+                <Link to="/bookmarks" className="text-secondary dark:text-gray-300 hover:text-primary transition-colors">
+                  <Bookmark size={20} />
                 </Link>
                 <div className="relative group">
                   <button className="flex items-center space-x-2 focus:outline-none">
@@ -93,13 +93,13 @@ const Header = () => {
                       {user?.name?.charAt(0) || <User size={16} />}
                     </div>
                   </button>
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg overflow-hidden z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 border dark:border-gray-700">
                     <div className="py-2">
-                      <Link to="/profile" className="block px-4 py-2 text-sm text-secondary hover:bg-gray-100">Profile</Link>
-                      <Link to="/alerts" className="block px-4 py-2 text-sm text-secondary hover:bg-gray-100">My Alerts</Link>
-                      <button 
+                      <Link to="/profile" className="block px-4 py-2 text-sm text-secondary dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Profile</Link>
+                      <Link to="/bookmarks" className="block px-4 py-2 text-sm text-secondary dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">My Bookmarks</Link>
+                      <button
                         onClick={handleLogout}
-                        className="block w-full text-left px-4 py-2 text-sm text-secondary hover:bg-gray-100"
+                        className="block w-full text-left px-4 py-2 text-sm text-secondary dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
                         Logout
                       </button>
@@ -145,7 +145,7 @@ const Header = () => {
             <Link to="/" className="text-secondary dark:text-gray-300 hover:text-primary py-2">Home</Link>
             <Link to="/search" className="text-secondary dark:text-gray-300 hover:text-primary py-2">Compare</Link>
             {isAuthenticated && (
-              <Link to="/alerts" className="text-secondary dark:text-gray-300 hover:text-primary py-2">My Alerts</Link>
+              <Link to="/bookmarks" className="text-secondary dark:text-gray-300 hover:text-primary py-2">My Bookmarks</Link>
             )}
             
             {isAuthenticated ? (

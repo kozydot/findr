@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { auth } from '../../firebase';
-import { GoogleAuthProvider, signInWithPopup, User as FirebaseUser } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, User as FirebaseUser, signInWithCustomToken } from 'firebase/auth';
 
 interface User {
   id: string;
@@ -45,12 +45,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (response.ok) {
       const token = await response.text();
-      // In a real app, you would use this token to sign in with the Firebase client SDK
-      // For now, we'll just create a mock user
-      const newUser = {
-        id: 'user-123',
-        name: email.split('@')[0],
-        email: email,
+      const userCredential = await signInWithCustomToken(auth, token);
+      const firebaseUser: FirebaseUser = userCredential.user;
+      const newUser: User = {
+        id: firebaseUser.uid,
+        name: firebaseUser.displayName || email.split('@')[0],
+        email: firebaseUser.email || email,
         providerId: 'password',
       };
       setUser(newUser);

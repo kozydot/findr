@@ -5,8 +5,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProductPage from './pages/ProductPage';
 import SearchResultsPage from './pages/SearchResultsPage';
-import AlertsPage from './pages/AlertsPage';
 import ProfilePage from './pages/ProfilePage';
+import BookmarksPage from './pages/BookmarksPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -22,8 +22,8 @@ function App() {
         
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
-          <Route path="alerts" element={<AlertsPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="bookmarks" element={<BookmarksPage />} />
         </Route>
         
         {/* 404 route */}

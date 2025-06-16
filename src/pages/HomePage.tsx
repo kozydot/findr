@@ -182,8 +182,13 @@ const HomePage = () => {
           >
             {loading && <p>Loading products...</p>}
             {error && <p className="text-red-500">{error}</p>}
-            {featuredProducts.map((product) => (
-              <motion.div key={product.id} variants={itemVariants}>
+            {featuredProducts.map((product, index) => (
+              <motion.div
+                key={product.id}
+                variants={itemVariants}
+                className="animate-fadeIn"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
                 <ProductCard product={product} />
               </motion.div>
             ))}

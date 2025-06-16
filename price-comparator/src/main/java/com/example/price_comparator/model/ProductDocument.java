@@ -12,6 +12,10 @@ public class ProductDocument {
     private String name;
     private String brand;
     private String description;
+    private String model;
+    private String storage;
+    private String ram;
+    private String color;
     private String imageUrl;
     private double rating;
     private int reviews;
@@ -63,6 +67,38 @@ public class ProductDocument {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public void setModel(String model) {
+        this.model = model;
+    }
+
+    public String getStorage() {
+        return storage;
+    }
+
+    public void setStorage(String storage) {
+        this.storage = storage;
+    }
+
+    public String getRam() {
+        return ram;
+    }
+
+    public void setRam(String ram) {
+        this.ram = ram;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
     }
 
     public String getImageUrl() {

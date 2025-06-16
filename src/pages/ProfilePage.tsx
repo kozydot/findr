@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Bell, User, Mail, Lock, LogOut, Save, AlertTriangle } from 'lucide-react';
-import { useAlerts } from '../context/AlertContext';
 
 const ProfilePage = () => {
   const { user, logout, updateUser } = useAuth();
-  const { alerts } = useAlerts();
   const [activeTab, setActiveTab] = useState<'account' | 'notifications' | 'security'>('account');
   const [isEditing, setIsEditing] = useState(false);
   const [showConfirmLogout, setShowConfirmLogout] = useState(false);
@@ -38,6 +36,44 @@ const ProfilePage = () => {
   const confirmLogout = () => {
     logout();
     setShowConfirmLogout(false);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const newPassword = (form.elements.namedItem('newPassword') as HTMLInputElement).value;
+    const confirmPassword = (form.elements.namedItem('confirmPassword') as HTMLInputElement).value;
+
+    if (newPassword !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    if (user) {
+      try {
+        await fetch(`/auth/password/${user.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: newPassword }),
+        });
+        alert("Password updated successfully");
+      } catch (error) {
+        alert("Failed to update password");
+      }
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (user && window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+      try {
+        await fetch(`http://localhost:8081/auth/${user.id}`, { method: 'DELETE' });
+        logout();
+        alert("Account deleted successfully");
+        window.location.href = "/";
+      } catch (error) {
+        alert("Failed to delete account");
+      }
+    }
   };
   
   return (
@@ -78,22 +114,6 @@ const ProfilePage = () => {
                 Account Information
               </button>
               
-              <button
-                onClick={() => setActiveTab('notifications')}
-                className={`flex items-center w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                  activeTab === 'notifications'
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                <Bell size={18} className="mr-3" />
-                Notifications
-                {alerts.length > 0 && (
-                  <span className="ml-auto bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {alerts.length}
-                  </span>
-                )}
-              </button>
               
               <button
                 onClick={() => setActiveTab('security')}
@@ -205,148 +225,18 @@ const ProfilePage = () => {
           )}
           
           {/* Notifications Tab */}
-          {activeTab === 'notifications' && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold mb-6">Notification Settings</h2>
-              
-              <div className="space-y-6">
-                <div>
-                  <h3 className="font-medium mb-3">Price Alerts</h3>
-                  <div className="space-y-3">
-                    <label className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                      <div>
-                        <span className="font-medium">Price Drop Alerts</span>
-                        <p className="text-sm text-gray-500">Get notified when a product price drops below your target</p>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={notificationSettings.priceAlerts}
-                          onChange={() => handleToggleNotification('priceAlerts')}
-                          className="sr-only"
-                        />
-                        <div
-                          className={`w-12 h-6 rounded-full transition ${
-                            notificationSettings.priceAlerts ? 'bg-primary' : 'bg-gray-300'
-                          }`}
-                        >
-                          <div
-                            className={`transform transition w-6 h-6 rounded-full bg-white shadow-md ${
-                              notificationSettings.priceAlerts ? 'translate-x-6' : 'translate-x-0'
-                            }`}
-                          ></div>
-                        </div>
-                      </div>
-                    </label>
-                    
-                    <label className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                      <div>
-                        <span className="font-medium">Significant Price Drops</span>
-                        <p className="text-sm text-gray-500">Get notified when prices drop significantly ({'>'}20%)</p>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={notificationSettings.priceDrops}
-                          onChange={() => handleToggleNotification('priceDrops')}
-                          className="sr-only"
-                        />
-                        <div
-                          className={`w-12 h-6 rounded-full transition ${
-                            notificationSettings.priceDrops ? 'bg-primary' : 'bg-gray-300'
-                          }`}
-                        >
-                          <div
-                            className={`transform transition w-6 h-6 rounded-full bg-white shadow-md ${
-                              notificationSettings.priceDrops ? 'translate-x-6' : 'translate-x-0'
-                            }`}
-                          ></div>
-                        </div>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="font-medium mb-3">Email Preferences</h3>
-                  <div className="space-y-3">
-                    <label className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                      <div>
-                        <span className="font-medium">Deal of the Day</span>
-                        <p className="text-sm text-gray-500">Receive a daily email with the best deal of the day</p>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={notificationSettings.dealOfTheDay}
-                          onChange={() => handleToggleNotification('dealOfTheDay')}
-                          className="sr-only"
-                        />
-                        <div
-                          className={`w-12 h-6 rounded-full transition ${
-                            notificationSettings.dealOfTheDay ? 'bg-primary' : 'bg-gray-300'
-                          }`}
-                        >
-                          <div
-                            className={`transform transition w-6 h-6 rounded-full bg-white shadow-md ${
-                              notificationSettings.dealOfTheDay ? 'translate-x-6' : 'translate-x-0'
-                            }`}
-                          ></div>
-                        </div>
-                      </div>
-                    </label>
-                    
-                    <label className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                      <div>
-                        <span className="font-medium">Weekly Newsletter</span>
-                        <p className="text-sm text-gray-500">Weekly summary of the best deals and price drops</p>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={notificationSettings.newsletter}
-                          onChange={() => handleToggleNotification('newsletter')}
-                          className="sr-only"
-                        />
-                        <div
-                          className={`w-12 h-6 rounded-full transition ${
-                            notificationSettings.newsletter ? 'bg-primary' : 'bg-gray-300'
-                          }`}
-                        >
-                          <div
-                            className={`transform transition w-6 h-6 rounded-full bg-white shadow-md ${
-                              notificationSettings.newsletter ? 'translate-x-6' : 'translate-x-0'
-                            }`}
-                          ></div>
-                        </div>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="flex justify-end">
-                  <button
-                    className="btn btn-primary flex items-center"
-                  >
-                    <Save size={18} className="mr-2" />
-                    Save Preferences
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
           
           {/* Security Tab */}
           {activeTab === 'security' && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold mb-6">Security Settings</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+              <h2 className="text-xl font-semibold mb-6 dark:text-white">Security Settings</h2>
               
               <div className="space-y-6">
                 <div>
-                  <h3 className="font-medium mb-3">Change Password</h3>
-                  <form className="space-y-4">
+                  <h3 className="font-medium mb-3 dark:text-white">Change Password</h3>
+                  <form className="space-y-4" onSubmit={handleChangePassword}>
                     <div>
-                      <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Current Password
                       </label>
                       <input
@@ -358,7 +248,7 @@ const ProfilePage = () => {
                     </div>
                     
                     <div>
-                      <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         New Password
                       </label>
                       <input
@@ -367,13 +257,13 @@ const ProfilePage = () => {
                         className="input"
                         placeholder="Enter your new password"
                       />
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                         Must be at least 8 characters with a mix of letters, numbers, and symbols
                       </p>
                     </div>
                     
                     <div>
-                      <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Confirm New Password
                       </label>
                       <input
@@ -395,12 +285,12 @@ const ProfilePage = () => {
                   </form>
                 </div>
                 
-                <div className="pt-6 border-t border-gray-100">
-                  <h3 className="font-medium mb-3">Two-Factor Authentication</h3>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
+                  <h3 className="font-medium mb-3 dark:text-white">Two-Factor Authentication</h3>
+                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <div>
-                      <p className="font-medium">Enhance your account security</p>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="font-medium dark:text-white">Enhance your account security</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         Add an extra layer of security to your account by enabling two-factor authentication.
                       </p>
                     </div>
@@ -410,14 +300,14 @@ const ProfilePage = () => {
                   </div>
                 </div>
                 
-                <div className="pt-6 border-t border-gray-100">
+                <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
                   <h3 className="font-medium text-error mb-3">Danger Zone</h3>
                   <div className="p-4 border border-error/20 rounded-lg bg-error/5">
-                    <h4 className="font-medium">Delete Account</h4>
-                    <p className="text-sm text-gray-600 mt-1 mb-3">
+                    <h4 className="font-medium dark:text-white">Delete Account</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 mb-3">
                       Once you delete your account, there is no going back. This action cannot be undone.
                     </p>
-                    <button className="btn bg-white border border-error text-error hover:bg-error/10 text-sm">
+                    <button className="btn bg-white dark:bg-transparent border border-error text-error hover:bg-error/10 text-sm" onClick={handleDeleteAccount}>
                       Delete My Account
                     </button>
                   </div>

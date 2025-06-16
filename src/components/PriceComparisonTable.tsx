@@ -7,9 +7,10 @@ import SockJS from 'sockjs-client';
 
 interface PriceComparisonTableProps {
   retailers: Retailer[];
+  currency?: string;
 }
 
-const PriceComparisonTable = ({ retailers }: PriceComparisonTableProps) => {
+const PriceComparisonTable = ({ retailers, currency }: PriceComparisonTableProps) => {
   const { id } = useParams<{ id: string }>();
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [isComparisonLoading, setIsComparisonLoading] = useState(true);
@@ -52,7 +53,7 @@ const PriceComparisonTable = ({ retailers }: PriceComparisonTableProps) => {
   if (!retailers || retailers.length <= 1) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 text-center">
-        <h3 className="text-xl font-semibold text-secondary dark:text-white mb-2">Similar Products</h3>
+        <h3 className="text-xl font-semibold text-secondary dark:text-white mb-2">Price Comparisons</h3>
         <p className="text-gray-500 dark:text-gray-400">No other retailers found for this product.</p>
       </div>
     );
@@ -78,8 +79,8 @@ const PriceComparisonTable = ({ retailers }: PriceComparisonTableProps) => {
   
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-      <div className="p-4 border-b border-gray-100 dark:border-gray-700">
-        <h3 className="text-xl font-semibold text-secondary dark:text-white">Similar Products</h3>
+      <div className="p-4 border-b border-gray-100 dark:border-gray-700 text-center">
+        <h3 className="text-xl font-semibold text-secondary dark:text-white">Price Comparisons</h3>
       </div>
       
       <div>
@@ -113,7 +114,7 @@ const PriceComparisonTable = ({ retailers }: PriceComparisonTableProps) => {
                     <span className={`font-bold text-base sm:text-lg ${retailer.currentPrice === lowestPrice ? 'text-success' : 'dark:text-white'}`}>
                       {retailer.currentPrice.toFixed(2)}
                     </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">AED</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">{currency === 'AE' ? 'AED' : currency}</span>
                   </div>
                 </td>
                 <td className="hidden md:table-cell px-2 sm:px-4 py-4 whitespace-nowrap">

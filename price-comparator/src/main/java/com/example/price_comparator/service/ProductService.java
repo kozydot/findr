@@ -83,24 +83,45 @@ public class ProductService {
 
     @Async("taskExecutor")
     public void enrichProduct(ProductDocument product) {
-        if (product.getDescription() == null || product.getDescription().isEmpty()) {
+        if (needsEnrichment(product)) {
             logger.info("Enriching existing product with full details from Amazon.");
             amazonApiService.getProductDetails(product.getId())
                 .thenAccept(fullDetails -> {
                     if (fullDetails != null) {
-                        if (product.getDescription() == null || product.getDescription().isEmpty()) {
-                            product.setDescription(fullDetails.getDescription());
-                        }
-                        if (product.getSpecifications() == null || product.getSpecifications().isEmpty()) {
-                            product.setSpecifications(fullDetails.getSpecifications());
-                        }
-                        if (product.getAbout() == null || product.getAbout().isEmpty()) {
-                            product.setAbout(fullDetails.getAbout());
-                        }
+                        updateProductDetails(product, fullDetails);
                         saveProduct(product);
                         messagingTemplate.convertAndSend("/topic/products/" + product.getId(), product);
                     }
                 });
+        }
+    }
+
+    private boolean needsEnrichment(ProductDocument product) {
+        return product.getDescription() == null || product.getDescription().isEmpty() ||
+               product.getModel() == null || product.getStorage() == null || product.getRam() == null;
+    }
+
+    private void updateProductDetails(ProductDocument existingProduct, ProductDocument newDetails) {
+        if (newDetails.getDescription() != null && !newDetails.getDescription().isEmpty()) {
+            existingProduct.setDescription(newDetails.getDescription());
+        }
+        if (newDetails.getSpecifications() != null && !newDetails.getSpecifications().isEmpty()) {
+            existingProduct.setSpecifications(newDetails.getSpecifications());
+        }
+        if (newDetails.getAbout() != null && !newDetails.getAbout().isEmpty()) {
+            existingProduct.setAbout(newDetails.getAbout());
+        }
+        if (newDetails.getModel() != null) {
+            existingProduct.setModel(newDetails.getModel());
+        }
+        if (newDetails.getStorage() != null) {
+            existingProduct.setStorage(newDetails.getStorage());
+        }
+        if (newDetails.getRam() != null) {
+            existingProduct.setRam(newDetails.getRam());
+        }
+        if (newDetails.getColor() != null) {
+            existingProduct.setColor(newDetails.getColor());
         }
     }
 
@@ -118,7 +139,7 @@ public class ProductService {
         return CompletableFuture.supplyAsync(() -> {
             if (product.getRetailers() == null || product.getRetailers().size() <= 1) {
                 logger.info("Proceeding with Shopping comparison for: {}", product.getName());
-                List<ShoppingProduct> shoppingProducts = shoppingService.findOffers(product.getName(), username, password);
+                List<ShoppingProduct> shoppingProducts = shoppingService.findOffers(product, username, password);
                 if (!shoppingProducts.isEmpty()) {
                     logger.info("Found {} offers on Shopping for: {}", shoppingProducts.size(), product.getName());
                     List<RetailerInfo> offers = shoppingProducts.parallelStream()
@@ -209,5 +230,25 @@ public class ProductService {
         logger.info("Saving product to Firebase: {}", product.getName());
         firebaseService.saveProduct(product);
         return product;
+    }
+
+    public void addBookmark(String userId, String productId) {
+        firebaseService.addBookmark(userId, productId);
+    }
+
+    public void removeBookmark(String userId, String productId) {
+        firebaseService.removeBookmark(userId, productId);
+    }
+
+    public CompletableFuture<List<ProductDocument>> getBookmarks(String userId) {
+        return firebaseService.getBookmarks(userId).thenCompose(productIds -> {
+            List<CompletableFuture<ProductDocument>> futures = productIds.stream()
+                    .map(this::getProductById)
+                    .collect(Collectors.toList());
+            return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .thenApply(v -> futures.stream()
+                            .map(CompletableFuture::join)
+                            .collect(Collectors.toList()));
+        });
     }
 }

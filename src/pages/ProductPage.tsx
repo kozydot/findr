@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Share2, Star, ChevronRight, ArrowLeft,
-  ShoppingCart, Heart, Bell
+  ShoppingCart, Heart
 } from 'lucide-react';
 import PriceComparisonTable from '../components/PriceComparisonTable';
-import AlertForm from '../components/AlertForm';
 import { Product } from '../types';
+import BookmarkButton from '../components/BookmarkButton';
 import { useAuth } from '../context/AuthContext';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -286,7 +286,7 @@ const ProductPage = () => {
                         <span className="font-medium text-secondary dark:text-white">{bestRetailer.name}</span>
                       </div>
                       <div className="text-2xl font-bold text-primary">
-                        {lowestPrice.toFixed(2)} AED
+                        {lowestPrice.toFixed(2)} {product.currency === 'AE' ? 'AED' : product.currency}
                       </div>
                     </div>
                   </div>
@@ -308,17 +308,7 @@ const ProductPage = () => {
                       <Share2 size={18} />
                     </button>
                     {isAuthenticated && (
-                      <button
-                        onClick={toggleFavorite}
-                        className={`btn p-3 ${
-                          isFavorite
-                            ? 'bg-primary/10 text-primary hover:bg-primary/20'
-                            : 'bg-gray-100 dark:bg-gray-700 text-secondary dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                        }`}
-                        aria-label="Add to favorites"
-                      >
-                        <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
-                      </button>
+                      <BookmarkButton product={product} />
                     )}
                   </div>
                 </>
@@ -387,28 +377,9 @@ const ProductPage = () => {
         <div className="lg:col-span-1">
           <div className="sticky top-6">
             {hasRetailers ? (
-              <>
-                {isAuthenticated ? (
-                  <AlertForm product={product} />
-                ) : (
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden p-4">
-                    <div className="text-center p-4">
-                      <Bell size={24} className="mx-auto text-primary mb-3" />
-                      <h3 className="font-semibold text-lg mb-2 dark:text-white">Get Price Drop Alerts</h3>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                        Sign in to set up price alerts and we'll notify you when prices drop.
-                      </p>
-                      <Link to="/login" className="btn btn-primary text-sm">
-                        Log In to Set Alert
-                      </Link>
-                    </div>
-                  </div>
-                )}
-                
-                <div className="mt-6">
-                  <PriceComparisonTable retailers={product.retailers} />
-                </div>
-              </>
+              <div className="mt-6">
+                <PriceComparisonTable retailers={product.retailers} currency={product.currency} />
+              </div>
             ) : (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 text-center">
                 <h3 className="font-semibold text-lg mb-2 dark:text-white">No Price Data</h3>

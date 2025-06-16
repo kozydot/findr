@@ -1,0 +1,124 @@
+"filename", "language", "TypeScript", "XML", "JSON", "JSON with Comments", "JavaScript", "Markdown", "TypeScript JSX", "PostCSS", "Java Properties", "Java", "HTML", "Batch", "Makefile", "Python", "toml", "Ini", "YAML", "comment", "blank", "total"
+"c:\Users\Kozy\Documents\princecomparison_dom\.mvn\wrapper\maven-wrapper.properties", "Java Properties", 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 16, 1, 20
+"c:\Users\Kozy\Documents\princecomparison_dom\HELP.md", "Markdown", 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 31
+"c:\Users\Kozy\Documents\princecomparison_dom\README.md", "Markdown", 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 5
+"c:\Users\Kozy\Documents\princecomparison_dom\database.rules.json", "JSON", 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 13
+"c:\Users\Kozy\Documents\princecomparison_dom\dataconnect\connector\connector.yaml", "YAML", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 1, 7
+"c:\Users\Kozy\Documents\princecomparison_dom\dataconnect\dataconnect.yaml", "YAML", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 1, 1, 13
+"c:\Users\Kozy\Documents\princecomparison_dom\eslint.config.js", "JavaScript", 0, 0, 0, 0, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 33
+"c:\Users\Kozy\Documents\princecomparison_dom\findr\.eslintrc.js", "JavaScript", 0, 0, 0, 0, 33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 34
+"c:\Users\Kozy\Documents\princecomparison_dom\findr\package-lock.json", "JSON", 0, 0, 9048, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 9049
+"c:\Users\Kozy\Documents\princecomparison_dom\findr\package.json", "JSON", 0, 0, 31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 32
+"c:\Users\Kozy\Documents\princecomparison_dom\findr\src\index.ts", "TypeScript", 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 4, 20
+"c:\Users\Kozy\Documents\princecomparison_dom\findr\tsconfig.dev.json", "JSON", 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 6
+"c:\Users\Kozy\Documents\princecomparison_dom\findr\tsconfig.json", "JSON with Comments", 0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 18
+"c:\Users\Kozy\Documents\princecomparison_dom\firebase.json", "JSON", 0, 0, 75, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 76
+"c:\Users\Kozy\Documents\princecomparison_dom\firebase.ts", "TypeScript", 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 2, 23
+"c:\Users\Kozy\Documents\princecomparison_dom\firestore.indexes.json", "JSON", 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 0, 26
+"c:\Users\Kozy\Documents\princecomparison_dom\functions\.eslintrc.js", "JavaScript", 0, 0, 0, 0, 33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 34
+"c:\Users\Kozy\Documents\princecomparison_dom\functions\package-lock.json", "JSON", 0, 0, 9018, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 9019
+"c:\Users\Kozy\Documents\princecomparison_dom\functions\package.json", "JSON", 0, 0, 31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 32
+"c:\Users\Kozy\Documents\princecomparison_dom\functions\src\genkit-sample.ts", "TypeScript", 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 27, 12, 71
+"c:\Users\Kozy\Documents\princecomparison_dom\functions\src\index.ts", "TypeScript", 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 4, 20
+"c:\Users\Kozy\Documents\princecomparison_dom\functions\tsconfig.dev.json", "JSON", 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 6
+"c:\Users\Kozy\Documents\princecomparison_dom\functions\tsconfig.json", "JSON with Comments", 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18
+"c:\Users\Kozy\Documents\princecomparison_dom\how-to-scrape-amazon-prices\.flake8", "Ini", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 26, 0, 0, 1, 27
+"c:\Users\Kozy\Documents\princecomparison_dom\how-to-scrape-amazon-prices\.pre-commit-config.yaml", "YAML", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 70, 0, 8, 78
+"c:\Users\Kozy\Documents\princecomparison_dom\how-to-scrape-amazon-prices\Makefile", "Makefile", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 1, 5, 18
+"c:\Users\Kozy\Documents\princecomparison_dom\how-to-scrape-amazon-prices\README.md", "Markdown", 0, 0, 0, 0, 0, 125, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 59, 184
+"c:\Users\Kozy\Documents\princecomparison_dom\how-to-scrape-amazon-prices\code_examples\example.py", "Python", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 70, 0, 0, 0, 0, 16, 86
+"c:\Users\Kozy\Documents\princecomparison_dom\how-to-scrape-amazon-prices\poetry.lock", "toml", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1192, 0, 0, 0, 84, 1276
+"c:\Users\Kozy\Documents\princecomparison_dom\how-to-scrape-amazon-prices\src\amazon_prices_scraper\__init__.py", "Python", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\Kozy\Documents\princecomparison_dom\how-to-scrape-amazon-prices\src\amazon_prices_scraper\__main__.py", "Python", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 3, 10, 28
+"c:\Users\Kozy\Documents\princecomparison_dom\how-to-scrape-amazon-prices\src\amazon_prices_scraper\collector.py", "Python", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 31, 0, 0, 0, 11, 14, 56
+"c:\Users\Kozy\Documents\princecomparison_dom\how-to-scrape-amazon-prices\src\amazon_prices_scraper\exception.py", "Python", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 4, 5, 13
+"c:\Users\Kozy\Documents\princecomparison_dom\how-to-scrape-amazon-prices\src\amazon_prices_scraper\models.py", "Python", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 3, 4, 13
+"c:\Users\Kozy\Documents\princecomparison_dom\how-to-scrape-amazon-prices\src\amazon_prices_scraper\scraper.py", "Python", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 106, 0, 0, 0, 18, 32, 156
+"c:\Users\Kozy\Documents\princecomparison_dom\index.html", "HTML", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 18
+"c:\Users\Kozy\Documents\princecomparison_dom\mvnw.cmd", "Batch", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 108, 0, 0, 0, 0, 0, 26, 16, 150
+"c:\Users\Kozy\Documents\princecomparison_dom\package-lock.json", "JSON", 0, 0, 6162, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 6163
+"c:\Users\Kozy\Documents\princecomparison_dom\package.json", "JSON", 0, 0, 41, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 42
+"c:\Users\Kozy\Documents\princecomparison_dom\pom.xml", "XML", 0, 93, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 98
+"c:\Users\Kozy\Documents\princecomparison_dom\postcss.config.js", "JavaScript", 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 7
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\.mvn\wrapper\maven-wrapper.properties", "Java Properties", 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 16, 1, 20
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\mvnw.cmd", "Batch", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 108, 0, 0, 0, 0, 0, 26, 16, 150
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\pom.xml", "XML", 0, 141, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 145
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\run_scraper_test.bat", "Batch", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 0, 0, 0, 0, 0, 0, 10, 52
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\run_scraping_service_test.bat", "Batch", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 0, 0, 0, 0, 0, 0, 10, 52
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\PriceComparatorApplication.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 5, 20
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\config\AsyncConfig.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 4, 22
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\config\FirebaseConfig.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 41, 0, 0, 0, 0, 0, 0, 0, 0, 10, 51
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\config\SecurityConfig.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 3, 22
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\config\WebConfig.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 4, 19
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\config\WebSocketConfig.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 4, 23
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\controller\AuthController.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 8, 48
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\controller\ProductController.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0, 0, 5, 17, 121
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\dto\AliexpressMatch.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 37, 0, 0, 0, 0, 0, 0, 0, 1, 11, 49
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\dto\AmazonProduct.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 1, 7, 29
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\dto\ComparisonResponse.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 2, 12
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\dto\ComparisonResult.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 58, 0, 0, 0, 0, 0, 0, 0, 3, 17, 78
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\dto\PriceComparison.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 45, 0, 0, 0, 0, 0, 0, 0, 1, 13, 59
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\dto\ShoppingProduct.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 2, 16
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\model\ProductDocument.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 137, 0, 0, 0, 0, 0, 0, 0, 2, 41, 180
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\model\RetailerInfo.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 5, 24
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\model\SpecificationInfo.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 4, 15
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\model\User.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 3, 12
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\service\AmazonApiService.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 219, 0, 0, 0, 0, 0, 0, 0, 2, 36, 257
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\service\AuthService.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 34, 0, 0, 0, 0, 0, 0, 0, 5, 10, 49
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\service\DataInitializationService.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 1, 13, 62
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\service\ExchangeRateService.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 2, 4, 15
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\service\FirebaseService.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 141, 0, 0, 0, 0, 0, 0, 0, 1, 21, 163
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\service\ImageHashingService.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 0, 6, 4, 24
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\service\OxylabsShoppingScraper.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 182, 0, 0, 0, 0, 0, 0, 0, 4, 30, 216
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\service\PriceApiService.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 23, 0, 0, 0, 0, 0, 0, 0, 0, 7, 30
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\service\ProductService.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 187, 0, 0, 0, 0, 0, 0, 0, 2, 25, 214
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\service\RetailerApiService.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 4, 12
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\service\ScheduledTasksService.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 57, 0, 0, 0, 0, 0, 0, 0, 0, 15, 72
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\service\ShoppingService.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 29, 0, 0, 0, 0, 0, 0, 0, 0, 8, 37
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\example\price_comparator\utils\JsonUtils.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 2, 9
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\serpapi\GoogleSearch.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 38, 0, 0, 0, 0, 0, 0, 0, 0, 7, 45
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\java\com\serpapi\SerpApiSearchException.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 3, 12
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\main\resources\application.properties", "Java Properties", 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 9
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\test\java\com\example\price_comparator\PriceComparatorApplicationTests.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 5, 16
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\test\java\com\example\price_comparator\config\TestFirebaseConfig.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 28, 0, 0, 0, 0, 0, 0, 0, 0, 6, 34
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\test\java\com\example\price_comparator\service\AmazonApiServiceTest.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 3, 7, 30
+"c:\Users\Kozy\Documents\princecomparison_dom\price-comparator\src\test\java\com\example\price_comparator\service\OxylabsShoppingScraperTest.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 56, 0, 0, 0, 0, 0, 0, 0, 1, 17, 74
+"c:\Users\Kozy\Documents\princecomparison_dom\public\favicon.svg", "XML", 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5
+"c:\Users\Kozy\Documents\princecomparison_dom\remoteconfig.template.json", "JSON", 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
+"c:\Users\Kozy\Documents\princecomparison_dom\src\App.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 36
+"c:\Users\Kozy\Documents\princecomparison_dom\src\components\AlertCard.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 72, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 13, 88
+"c:\Users\Kozy\Documents\princecomparison_dom\src\components\AlertForm.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 139, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 16, 159
+"c:\Users\Kozy\Documents\princecomparison_dom\src\components\Footer.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 68
+"c:\Users\Kozy\Documents\princecomparison_dom\src\components\Header.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 151, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 16, 174
+"c:\Users\Kozy\Documents\princecomparison_dom\src\components\Layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 26
+"c:\Users\Kozy\Documents\princecomparison_dom\src\components\PriceComparisonTable.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 139, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 15, 157
+"c:\Users\Kozy\Documents\princecomparison_dom\src\components\ProductCard.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 13, 144
+"c:\Users\Kozy\Documents\princecomparison_dom\src\components\ProtectedRoute.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 16
+"c:\Users\Kozy\Documents\princecomparison_dom\src\components\SearchBar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 12, 131
+"c:\Users\Kozy\Documents\princecomparison_dom\src\components\ThemeToggle.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\Kozy\Documents\princecomparison_dom\src\context\AlertContext.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 72, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 14, 88
+"c:\Users\Kozy\Documents\princecomparison_dom\src\context\AuthContext.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 119, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 15, 137
+"c:\Users\Kozy\Documents\princecomparison_dom\src\context\ProductContext.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 70, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 82
+"c:\Users\Kozy\Documents\princecomparison_dom\src\context\ThemeContext.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 51
+"c:\Users\Kozy\Documents\princecomparison_dom\src\data\mockData.ts", "TypeScript", 575, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 579
+"c:\Users\Kozy\Documents\princecomparison_dom\src\index.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, 66, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 19, 86
+"c:\Users\Kozy\Documents\princecomparison_dom\src\main.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 25
+"c:\Users\Kozy\Documents\princecomparison_dom\src\main\java\com\example\price_comparator\PriceComparatorApplication.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 5, 14
+"c:\Users\Kozy\Documents\princecomparison_dom\src\main\resources\application.properties", "Java Properties", 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2
+"c:\Users\Kozy\Documents\princecomparison_dom\src\pages\AlertsPage.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 126, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 12, 140
+"c:\Users\Kozy\Documents\princecomparison_dom\src\pages\HomePage.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 296, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 23, 327
+"c:\Users\Kozy\Documents\princecomparison_dom\src\pages\LoginPage.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 153, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 14, 169
+"c:\Users\Kozy\Documents\princecomparison_dom\src\pages\NotFoundPage.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 28
+"c:\Users\Kozy\Documents\princecomparison_dom\src\pages\ProductPage.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 389, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 31, 428
+"c:\Users\Kozy\Documents\princecomparison_dom\src\pages\ProfilePage.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 425, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 33, 466
+"c:\Users\Kozy\Documents\princecomparison_dom\src\pages\RegisterPage.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 202, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 19, 223
+"c:\Users\Kozy\Documents\princecomparison_dom\src\pages\SearchResultsPage.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 304, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 39, 344
+"c:\Users\Kozy\Documents\princecomparison_dom\src\test\java\com\example\price_comparator\PriceComparatorApplicationTests.java", "Java", 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 5, 14
+"c:\Users\Kozy\Documents\princecomparison_dom\src\types\index.ts", "TypeScript", 38, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 43
+"c:\Users\Kozy\Documents\princecomparison_dom\src\vite-env.d.ts", "TypeScript", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2
+"c:\Users\Kozy\Documents\princecomparison_dom\tailwind.config.js", "JavaScript", 0, 0, 0, 0, 46, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 47
+"c:\Users\Kozy\Documents\princecomparison_dom\tsconfig.app.json", "JSON", 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 25
+"c:\Users\Kozy\Documents\princecomparison_dom\tsconfig.json", "JSON with Comments", 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 8
+"c:\Users\Kozy\Documents\princecomparison_dom\tsconfig.node.json", "JSON", 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 23
+"c:\Users\Kozy\Documents\princecomparison_dom\vite.config.ts", "TypeScript", 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 22
+"Total", "-", 685, 239, 24471, 42, 148, 148, 3131, 66, 13, 1765, 18, 300, 12, 232, 1192, 26, 87, 321, 1119, 34015

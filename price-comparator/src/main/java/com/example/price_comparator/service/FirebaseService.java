@@ -132,6 +132,42 @@ public void saveUser(com.example.price_comparator.model.User user) {
         ref.setValueAsync(user);
     }
 
+    public void deleteUser(String uid) {
+        DatabaseReference ref = database.getReference("users/" + uid);
+        ref.removeValueAsync();
+    }
+
+    public void addBookmark(String userId, String productId) {
+        DatabaseReference ref = database.getReference("users/" + userId + "/bookmarks");
+        ref.child(productId).setValueAsync(true);
+    }
+
+    public void removeBookmark(String userId, String productId) {
+        DatabaseReference ref = database.getReference("users/" + userId + "/bookmarks/" + productId);
+        ref.removeValueAsync();
+    }
+
+    public CompletableFuture<List<String>> getBookmarks(String userId) {
+        DatabaseReference ref = database.getReference("users/" + userId + "/bookmarks");
+        CompletableFuture<List<String>> future = new CompletableFuture<>();
+        ref.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                List<String> bookmarks = new ArrayList<>();
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    bookmarks.add(snapshot.getKey());
+                }
+                future.complete(bookmarks);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                future.completeExceptionally(databaseError.toException());
+            }
+        });
+        return future;
+    }
+
     public long getLastAmazonFetchTimestamp() {
         DatabaseReference ref = database.getReference("metadata/lastAmazonFetch");
         CompletableFuture<Long> future = new CompletableFuture<>();

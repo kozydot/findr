@@ -5,19 +5,19 @@ import App from './App';
 import './index.css';
 import { AuthProvider } from './context/AuthContext';
 import { ProductProvider } from './context/ProductContext';
-import { AlertProvider } from './context/AlertContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { BookmarkProvider } from './context/BookmarkContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <ProductProvider>
-          <AlertProvider>
+          <BookmarkProvider>
             <ThemeProvider>
               <App />
             </ThemeProvider>
-          </AlertProvider>
+          </BookmarkProvider>
         </ProductProvider>
       </AuthProvider>
     </BrowserRouter>
