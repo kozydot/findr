@@ -93,7 +93,3 @@ npm run dev
 ```
 
 The frontend will be running at `http://localhost:5174`.
-
-## Deployment
-
-This project is configured for deployment on [Railway](https://railway.app/). Simply connect your GitHub repository to a new Railway project, and the `railway.json` file will handle the rest.
