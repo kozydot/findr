@@ -45,21 +45,18 @@ You will need to set up the following environment variables for the application 
 
 #### Backend (`price-comparator/`)
 
-Create a `.env` file in the `price-comparator/` directory and add the following:
+1.  Place your Firebase service account JSON file in the `price-comparator/src/main/resources/` directory.
+2.  Rename the file to `firebase-credentials.json`.
+3.  Open the `price-comparator/src/main/resources/application.properties` file and add the following:
 
-```
-GOOGLE_APPLICATION_CREDENTIALS=path/to/your/firebase-credentials.json
+```properties
 OXYLABS_USERNAME=your_oxylabs_username
 OXYLABS_PASSWORD=your_oxylabs_password
 ```
 
 #### Frontend (`/`)
 
-Create a `.env` file in the root directory and add the following:
-
-```
-VITE_API_BASE_URL=http://localhost:8081
-```
+The frontend is configured to use a proxy for API requests, so no environment variables are needed for it to communicate with the backend in a local development environment.
 
 ### 4. Install Dependencies
 
