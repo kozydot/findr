@@ -212,4 +212,5 @@ public class ProductDocument {
     public void setLastChecked(Date lastChecked) {
         this.lastChecked = lastChecked;
     }
+
 }

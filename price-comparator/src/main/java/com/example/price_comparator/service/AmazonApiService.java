@@ -30,7 +30,7 @@ public class AmazonApiService implements RetailerApiService {
             .connectTimeout(Duration.ofSeconds(60))
             .build();
 
-    private static final String API_KEY = "899814eca2msh36f2b7560806344p12a0a7jsn98f196c9460f";
+    private static final String API_KEY = "bd14942d97msh156a01a2a92cd6cp10be6cjsndfeb0c68787f";
     private static final String API_HOST = "real-time-amazon-data.p.rapidapi.com";
 
     public CompletableFuture<List<ProductDocument>> searchProducts(String query) {
@@ -306,4 +306,5 @@ public class AmazonApiService implements RetailerApiService {
         }
         return null;
     }
+
 }

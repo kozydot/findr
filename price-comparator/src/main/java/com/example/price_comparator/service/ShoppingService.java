@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.function.BiConsumer;
 
 @Service
 public class ShoppingService {
@@ -19,37 +20,45 @@ public class ShoppingService {
     @Autowired
     private OxylabsShoppingScraper oxylabsShoppingScraper;
 
-    public List<ShoppingProduct> findOffers(ProductDocument product, String username, String password) {
+    public List<ShoppingProduct> findOffers(ProductDocument product, String username, String password, BiConsumer<Integer, String> progressCallback) {
         String searchQuery = buildSearchQuery(product);
         logger.info("Searching with targeted query: '{}'", searchQuery);
-        return oxylabsShoppingScraper.scrapeShoppingResults(searchQuery, GEO_LOCATION, username, password);
+        return oxylabsShoppingScraper.scrapeShoppingResults(searchQuery, GEO_LOCATION, username, password, progressCallback);
     }
 
     private String buildSearchQuery(ProductDocument product) {
         StringJoiner queryBuilder = new StringJoiner(" ");
-        if (product.getBrand() != null && product.getModel() != null) {
-            queryBuilder.add(product.getBrand());
-            queryBuilder.add(product.getModel());
-            if (product.getStorage() != null) {
-                queryBuilder.add(product.getStorage());
-            }
-            if (product.getRam() != null) {
-                queryBuilder.add(product.getRam());
-            }
-            if (product.getColor() != null) {
-                queryBuilder.add(product.getColor());
-            }
-            return queryBuilder.toString();
-        }
 
+        // Start with the product name, cleaning it up a bit
         String name = product.getName();
         if (name.contains(":")) {
             name = name.substring(0, name.indexOf(":"));
         }
-        String[] words = name.trim().split("\\s+");
-        if (words.length > 7) {
-            name = String.join(" ", java.util.Arrays.copyOfRange(words, 0, 7));
+        queryBuilder.add(name);
+
+        // Add other attributes if they exist
+        if (product.getBrand() != null) {
+            queryBuilder.add(product.getBrand());
         }
-        return name;
+        if (product.getModel() != null) {
+            queryBuilder.add(product.getModel());
+        }
+        if (product.getStorage() != null) {
+            queryBuilder.add(product.getStorage());
+        }
+        if (product.getRam() != null) {
+            queryBuilder.add(product.getRam());
+        }
+        if (product.getColor() != null) {
+            queryBuilder.add(product.getColor());
+        }
+        
+        String finalQuery = queryBuilder.toString();
+        // Limit query length to avoid overly specific searches that might fail
+        String[] words = finalQuery.trim().split("\\s+");
+        if (words.length > 10) {
+            finalQuery = String.join(" ", java.util.Arrays.copyOfRange(words, 0, 10));
+        }
+        return finalQuery;
     }
 }

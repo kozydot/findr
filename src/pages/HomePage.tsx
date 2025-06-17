@@ -6,11 +6,13 @@ import { useInView } from 'react-intersection-observer';
 import SearchBar from '../components/SearchBar';
 import ProductCard from '../components/ProductCard';
 import { useProducts } from '../context/ProductContext';
+import { useAuth } from '../context/AuthContext';
 
 const HomePage = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const { featuredProducts, loading, error } = useProducts();
+  const { isAuthenticated } = useAuth();
   const [categories, setCategories] = useState<string[]>([]);
   
   // Intersection observer hooks for animation
@@ -308,22 +310,24 @@ const HomePage = () => {
       </section>
       
       {/* CTA Section */}
-      <section className="bg-primary py-16">
-        <div className="container mx-auto px-4 md:px-6 text-center">
-          <h2 className="text-3xl font-bold text-white mb-6">
-            Start Saving Today
-          </h2>
-          <p className="text-white/90 text-lg max-w-2xl mx-auto mb-8">
-            Join thousands of smart shoppers in UAE who use Findr to find the best deals.
-          </p>
-          <button 
-            onClick={() => navigate('/register')}
-            className="btn bg-white text-primary hover:bg-white/90"
-          >
-            Create Free Account
-          </button>
-        </div>
-      </section>
+      {!isAuthenticated && (
+        <section className="bg-primary py-16">
+          <div className="container mx-auto px-4 md:px-6 text-center">
+            <h2 className="text-3xl font-bold text-white mb-6">
+              Start Saving Today
+            </h2>
+            <p className="text-white/90 text-lg max-w-2xl mx-auto mb-8">
+              Join thousands of smart shoppers in UAE who use Findr to find the best deals.
+            </p>
+            <button
+              onClick={() => navigate('/register')}
+              className="btn bg-white text-primary hover:bg-white/90"
+            >
+              Create Free Account
+            </button>
+          </div>
+        </section>
+      )}
     </div>
   );
 };

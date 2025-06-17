@@ -82,18 +82,20 @@ public class ProductService {
     }
 
     @Async("taskExecutor")
-    public void enrichProduct(ProductDocument product) {
+    public CompletableFuture<ProductDocument> enrichProduct(ProductDocument product) {
         if (needsEnrichment(product)) {
             logger.info("Enriching existing product with full details from Amazon.");
-            amazonApiService.getProductDetails(product.getId())
-                .thenAccept(fullDetails -> {
+            return amazonApiService.getProductDetails(product.getId())
+                .thenApply(fullDetails -> {
                     if (fullDetails != null) {
                         updateProductDetails(product, fullDetails);
                         saveProduct(product);
                         messagingTemplate.convertAndSend("/topic/products/" + product.getId(), product);
                     }
+                    return product;
                 });
         }
+        return CompletableFuture.completedFuture(product);
     }
 
     private boolean needsEnrichment(ProductDocument product) {
@@ -137,12 +139,22 @@ public class ProductService {
     @Async("taskExecutor")
     public CompletableFuture<ProductDocument> triggerShoppingComparison(ProductDocument product, String taskId) {
         return CompletableFuture.supplyAsync(() -> {
+            String progressTopic = "/topic/products/" + product.getId() + "/progress";
+
             if (product.getRetailers() == null || product.getRetailers().size() <= 1) {
                 logger.info("Proceeding with Shopping comparison for: {}", product.getName());
-                List<ShoppingProduct> shoppingProducts = shoppingService.findOffers(product, username, password);
+                
+                java.util.function.BiConsumer<Integer, String> progressCallback = (progress, message) -> {
+                    logger.info("Progress for {}: {}% - {}", product.getId(), progress, message);
+                    messagingTemplate.convertAndSend(progressTopic, progress);
+                };
+
+                List<ShoppingProduct> shoppingProducts = shoppingService.findOffers(product, username, password, progressCallback);
+
                 if (!shoppingProducts.isEmpty()) {
                     logger.info("Found {} offers on Shopping for: {}", shoppingProducts.size(), product.getName());
                     List<RetailerInfo> offers = shoppingProducts.parallelStream()
+                        .filter(scrapedProduct -> isMatch(product.getName(), scrapedProduct.getTitle()))
                         .map(this::mapToRetailerInfo)
                         .collect(Collectors.toList());
                     List<RetailerInfo> allOffers = new ArrayList<>();
@@ -153,7 +165,7 @@ public class ProductService {
                     java.util.Map<String, RetailerInfo> bestOffers = allOffers.stream()
                         .filter(offer -> offer.getName() != null && offer.getProductUrl() != null && !offer.getProductUrl().isEmpty())
                         .collect(Collectors.toMap(
-                            RetailerInfo::getName,
+                            offer -> offer.getName().toLowerCase(),
                             offer -> offer,
                             (offer1, offer2) -> offer1.getCurrentPrice() < offer2.getCurrentPrice() ? offer1 : offer2
                         ));
@@ -169,7 +181,10 @@ public class ProductService {
                 }
             } else {
                 logger.info("Skipping Shopping search as comparison data already exists for: {}", product.getName());
+                messagingTemplate.convertAndSend(progressTopic, 100);
             }
+
+            messagingTemplate.convertAndSend("/topic/products/" + product.getId(), product);
             return product;
         });
     }
@@ -221,6 +236,15 @@ public class ProductService {
         return retailerInfo;
     }
 
+    private boolean isMatch(String originalTitle, String scrapedTitle) {
+        if (originalTitle == null || scrapedTitle == null) {
+            return false;
+        }
+        org.apache.commons.text.similarity.JaroWinklerSimilarity jaroWinkler = new org.apache.commons.text.similarity.JaroWinklerSimilarity();
+        double similarity = jaroWinkler.apply(originalTitle.toLowerCase(), scrapedTitle.toLowerCase());
+        return similarity > 0.85; // Threshold can be adjusted
+    }
+
     public List<String> getAmazonCategories() {
         logger.info("Fetching categories from Amazon");
         return List.of("Electronics", "Computers", "Smart Home", "Video Games");
@@ -248,6 +272,7 @@ public class ProductService {
             return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
                     .thenApply(v -> futures.stream()
                             .map(CompletableFuture::join)
+                            .filter(java.util.Objects::nonNull)
                             .collect(Collectors.toList()));
         });
     }

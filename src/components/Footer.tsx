@@ -14,20 +14,6 @@ const Footer = () => {
               Findr helps you find the best deals across UAE's top e-commerce platforms.
               Compare prices, track price history, and get alerts when prices drop.
             </p>
-            <div className="flex space-x-4 mt-6">
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors">
-                <Twitter size={18} />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors">
-                <Facebook size={18} />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors">
-                <Instagram size={18} />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors">
-                <Github size={18} />
-              </a>
-            </div>
           </div>
           
           <div>
@@ -53,8 +39,6 @@ const Footer = () => {
         <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-400 text-sm">© {new Date().getFullYear()} Findr. All rights reserved.</p>
           <div className="flex space-x-6 mt-4 md:mt-0">
-            <Link to="/privacy" className="text-gray-400 hover:text-primary transition-colors text-sm">Privacy Policy</Link>
-            <Link to="/terms" className="text-gray-400 hover:text-primary transition-colors text-sm">Terms of Service</Link>
             <a href="mailto:support@findr.ae" className="text-gray-400 hover:text-primary transition-colors text-sm flex items-center">
               <Mail size={14} className="mr-1" /> Contact
             </a>

@@ -19,12 +19,12 @@ You will need to set up the following environment variables for the application 
 #### Backend (`price-comparator/`)
 
 1.  Place your Firebase service account JSON file in the `price-comparator/src/main/resources/` directory.
-2.  Rename the file to `firebase-credentials.json`.
-3.  Open the `price-comparator/src/main/resources/application.properties` file and add the following:
+2.  **Important:** Rename the file to `price-comparator-23ac4-firebase-adminsdk-fbsvc-a9eb8ddc35.json`.
+3.  Open the `price-comparator/src/main/resources/application.properties` file and update the following values with your Oxylabs credentials:
 
 ```properties
-OXYLABS_USERNAME=your_oxylabs_username
-OXYLABS_PASSWORD=your_oxylabs_password
+oxylabs.username=your_oxylabs_username
+oxylabs.password=your_oxylabs_password
 ```
 
 #### Frontend (`/`)

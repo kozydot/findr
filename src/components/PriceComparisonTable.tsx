@@ -31,6 +31,10 @@ const PriceComparisonTable = ({ retailers, currency }: PriceComparisonTableProps
             setTimeout(() => setIsComparisonLoading(false), 1000);
           }
         });
+
+        client.subscribe(`/topic/products/${id}`, () => {
+          setIsComparisonLoading(false);
+        });
       },
     });
 
@@ -62,11 +66,7 @@ const PriceComparisonTable = ({ retailers, currency }: PriceComparisonTableProps
   // Sort retailers by price (lowest first)
   const sortedRetailers = [...retailers].sort((a, b) => a.currentPrice - b.currentPrice);
 
-  const processedRetailers = sortedRetailers.reduce((acc, retailer) => {
-    const count = acc.filter(r => r.name.split(' #')[0] === retailer.name).length;
-    const newName = count > 0 ? `${retailer.name} #${count + 1}` : retailer.name;
-    return [...acc, { ...retailer, name: newName }];
-  }, [] as Retailer[]);
+  const processedRetailers = sortedRetailers;
   
   // Get lowest price for highlighting
   const lowestPrice = sortedRetailers[0]?.currentPrice;
@@ -102,8 +102,8 @@ const PriceComparisonTable = ({ retailers, currency }: PriceComparisonTableProps
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {processedRetailers.map((retailer) => (
-              <tr key={retailer.retailerId} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            {processedRetailers.map((retailer, index) => (
+              <tr key={`${retailer.retailerId}-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                 <td className="px-2 sm:px-4 py-4">
                   <div className="flex items-center">
                     <span className="font-medium dark:text-white truncate">{retailer.name}</span>

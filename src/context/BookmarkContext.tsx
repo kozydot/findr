@@ -46,7 +46,7 @@ export const BookmarkProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const isBookmarked = (productId: string): boolean => {
-    return bookmarks.some(bookmark => bookmark.id === productId);
+    return bookmarks.some(bookmark => bookmark && bookmark.id === productId);
   };
 
   return (

@@ -64,26 +64,32 @@ public class ProductController {
     }
 
     @PostMapping("/{id}/enrich")
-    public ResponseEntity<Void> enrichProduct(@PathVariable String id) {
-        productService.getProductById(id).thenAccept(product -> {
+    public CompletableFuture<ResponseEntity<Void>> enrichProduct(@PathVariable String id) {
+        return productService.getProductById(id).thenCompose(product -> {
             if (product != null) {
-                productService.enrichProduct(product);
+                return productService.enrichProduct(product).thenApply(p -> ResponseEntity.accepted().build());
             }
+            return CompletableFuture.completedFuture(ResponseEntity.notFound().build());
         });
-        return ResponseEntity.accepted().build();
     }
 
     @PostMapping("/{id}/compare")
-    public ResponseEntity<String> startShoppingComparison(@PathVariable String id) {
+    public CompletableFuture<ResponseEntity<String>> startShoppingComparison(@PathVariable String id) {
         return productService.getProductById(id)
-            .thenApply(product -> {
-                if (product != null) {
-                    String taskId = productService.startShoppingComparison(product);
-                    return ResponseEntity.ok(taskId);
+            .thenCompose(product -> {
+                if (product == null) {
+                    return CompletableFuture.completedFuture(ResponseEntity.status(404).body("Product not found"));
                 }
-                return ResponseEntity.status(404).body("Product not found");
+                return productService.enrichProduct(product)
+                    .thenApply(enrichedProduct -> {
+                        String taskId = productService.startShoppingComparison(enrichedProduct);
+                        return ResponseEntity.ok(taskId);
+                    });
             })
-            .exceptionally(ex -> ResponseEntity.status(500).body("Error starting comparison")).join();
+            .exceptionally(ex -> {
+                logger.error("Error starting comparison for product {}", id, ex);
+                return ResponseEntity.status(500).body("Error starting comparison");
+            });
     }
 
     @GetMapping("/comparison/{taskId}")

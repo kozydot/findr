@@ -10,7 +10,7 @@ const BookmarksPage = () => {
       <h1 className="text-3xl font-bold text-secondary dark:text-white mb-8">My Bookmarks</h1>
       {bookmarks.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {bookmarks.map((product, index) => (
+          {bookmarks.filter(p => p).map((product, index) => (
             <div key={product.id} className="animate-fadeIn" style={{ animationDelay: `${index * 100}ms` }}>
               <ProductCard product={product} />
             </div>

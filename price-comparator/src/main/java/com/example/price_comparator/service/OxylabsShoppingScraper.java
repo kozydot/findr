@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,9 +22,10 @@ public class OxylabsShoppingScraper {
 
     private static final Logger logger = LoggerFactory.getLogger(OxylabsShoppingScraper.class);
 
-    public List<ShoppingProduct> scrapeShoppingResults(String query, String geoLocation, String username, String password) {
+    public List<ShoppingProduct> scrapeShoppingResults(String query, String geoLocation, String username, String password, BiConsumer<Integer, String> progressCallback) {
         List<ShoppingProduct> products = new ArrayList<>();
         try {
+            progressCallback.accept(10, "Initiating scraping process...");
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("source", "google_shopping_search");
             jsonObject.put("geo_location", geoLocation);
@@ -58,33 +60,39 @@ public class OxylabsShoppingScraper {
                     .post(body)
                     .build();
 
-            try (Response response = client.newCall(request).execute()) {
-                if (response.isSuccessful() && response.body() != null) {
-                    String responseBody = response.body().string();
-                    JSONObject responseJson = new JSONObject(responseBody);
-                    logger.debug("Full Oxylabs Response: {}", responseBody);
+           progressCallback.accept(25, "Sending request to Oxylabs...");
+           try (Response response = client.newCall(request).execute()) {
+               if (response.isSuccessful() && response.body() != null) {
+                   progressCallback.accept(50, "Response received, parsing results...");
+                   String responseBody = response.body().string();
+                   JSONObject responseJson = new JSONObject(responseBody);
+                   logger.debug("Full Oxylabs Response: {}", responseBody);
 
-                    JSONArray results = responseJson.optJSONArray("results");
-                    if (results != null && results.length() > 0) {
-                        extractProducts(results, products);
-                    } else {
-                        logger.info("No results array found for query: {}", query);
-                    }
+                   JSONArray results = responseJson.optJSONArray("results");
+                   if (results != null && results.length() > 0) {
+                       extractProducts(results, products);
+                       progressCallback.accept(90, "Found " + products.size() + " potential offers.");
+                   } else {
+                       logger.info("No results array found for query: {}", query);
+                       progressCallback.accept(90, "No offers found in the initial response.");
+                   }
 
-                } else {
-                    logger.error("Oxylabs request failed with code: {}", response.code());
-                }
-            }
+               } else {
+                   logger.error("Oxylabs request failed with code: {}", response.code());
+                   progressCallback.accept(100, "Failed to retrieve offers.");
+               }
+           }
         } catch (Exception e) {
             logger.error("Error during Oxylabs scraping: {}", e.getMessage(), e);
         }
         
-        if (products.isEmpty()) {
-            logger.warn("No shopping offers found for query: {}", query);
-        }
-        
-        return products;
-    }
+       if (products.isEmpty()) {
+           logger.warn("No shopping offers found for query: {}", query);
+       }
+       
+       progressCallback.accept(100, "Comparison finished.");
+       return products;
+   }
 
     private void extractProducts(JSONArray jsonArray, List<ShoppingProduct> products) {
         if (jsonArray == null) {
