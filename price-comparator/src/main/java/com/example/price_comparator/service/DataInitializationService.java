@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Service;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import java.util.List;
@@ -25,38 +27,60 @@ public class DataInitializationService implements ApplicationRunner {
     @Autowired
     private FirebaseService firebaseService;
 
+    private final Executor delayer = CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS);
+
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        logger.info("Checking if data initialization is needed...");
+        CompletableFuture.runAsync(() -> {
+            logger.info("Checking if data initialization is needed...");
 
-        long lastFetchTime = firebaseService.getLastAmazonFetchTimestamp();
+            firebaseService.getLastAmazonFetchTimestamp().thenCombine(firebaseService.productsExist(), (lastFetchTime, productsExist) -> {
+                long currentTime = System.currentTimeMillis();
+                long oneHourInMillis = TimeUnit.HOURS.toMillis(1);
+
+                boolean needsInit = !productsExist || (currentTime - lastFetchTime > oneHourInMillis);
+
+                if (needsInit) {
+                    performInitialization();
+                } else {
+                    logger.info("Skipping data initialization as it was performed recently and data exists.");
+                }
+                return null;
+            }).exceptionally(ex -> {
+                logger.error("An error occurred during data initialization check. Assuming initialization is needed.", ex);
+                performInitialization();
+                return null;
+            });
+        });
+    }
+
+    private void performInitialization() {
         long currentTime = System.currentTimeMillis();
-        long oneHourInMillis = TimeUnit.HOURS.toMillis(1);
-
-        if (currentTime - lastFetchTime < oneHourInMillis) {
-            logger.info("Skipping data initialization as it was performed within the last hour.");
-            return;
-        }
-
         logger.info("Starting data initialization...");
         List<String> categories = List.of("electronics", "computers", "smart home", "video games");
 
+        CompletableFuture<Void> allCategoriesFuture = CompletableFuture.completedFuture(null);
+
         for (String category : categories) {
-            logger.info("Fetching products for category: {}", category);
-            List<ProductDocument> products = amazonApiService.searchProductsByCategory(category).join();
-            for (ProductDocument product : products) {
-                productService.saveProduct(product);
-            }
-            try {
-                // Wait for 5 seconds before the next category to avoid rate limiting
-                TimeUnit.SECONDS.sleep(5);
-            } catch (InterruptedException e) {
-                logger.error("Data initialization was interrupted during wait", e);
-                Thread.currentThread().interrupt();
-            }
+            allCategoriesFuture = allCategoriesFuture.thenCompose(v -> {
+                logger.info("Fetching products for category: {}", category);
+                return amazonApiService.searchProductsByCategory(category)
+                        .thenAccept(fetchedProducts -> {
+                            for (ProductDocument product : fetchedProducts) {
+                                productService.saveProduct(product);
+                            }
+                        })
+                        .thenCompose(v2 -> CompletableFuture.runAsync(() -> {}, delayer));
+            });
         }
 
-        firebaseService.updateLastAmazonFetchTimestamp(currentTime);
-        logger.info("Data initialization complete.");
+        allCategoriesFuture.whenComplete((v, ex) -> {
+            if (ex != null) {
+                logger.error("Data initialization failed", ex);
+            } else {
+                firebaseService.updateLastAmazonFetchTimestamp(currentTime);
+                logger.info("Data initialization complete.");
+            }
+        });
     }
 }

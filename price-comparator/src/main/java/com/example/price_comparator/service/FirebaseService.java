@@ -66,7 +66,7 @@ public class FirebaseService {
         return future;
     }
 
-    public List<ProductDocument> getAllProducts() {
+    public CompletableFuture<List<ProductDocument>> getAllProducts() {
         DatabaseReference ref = database.getReference("products");
         CompletableFuture<List<ProductDocument>> future = new CompletableFuture<>();
         ref.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -84,15 +84,10 @@ public class FirebaseService {
                 future.completeExceptionally(databaseError.toException());
             }
         });
-        try {
-            return future.get();
-        } catch (Exception e) {
-            logger.error("Error fetching all products", e);
-            return List.of();
-        }
+        return future.orTimeout(30, java.util.concurrent.TimeUnit.SECONDS);
     }
 
-    public List<ProductDocument> searchProductsByName(String query) {
+    public CompletableFuture<List<ProductDocument>> searchProductsByName(String query) {
         DatabaseReference ref = database.getReference("products");
         CompletableFuture<List<ProductDocument>> future = new CompletableFuture<>();
         String lowerCaseQuery = query.toLowerCase();
@@ -116,14 +111,27 @@ public class FirebaseService {
             }
         });
 
-        try {
-            return future.get();
-        } catch (Exception e) {
-            logger.error("Error searching products by name", e);
-            return List.of();
-        }
+        return future.orTimeout(30, java.util.concurrent.TimeUnit.SECONDS);
     }
-public void saveUser(com.example.price_comparator.model.User user) {
+
+    public CompletableFuture<Boolean> productsExist() {
+        DatabaseReference ref = database.getReference("products");
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        ref.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                future.complete(dataSnapshot.exists() && dataSnapshot.hasChildren());
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                future.completeExceptionally(databaseError.toException());
+            }
+        });
+        return future.orTimeout(10, java.util.concurrent.TimeUnit.SECONDS);
+    }
+
+    public void saveUser(com.example.price_comparator.model.User user) {
         if (user == null || user.getUid() == null) {
             logger.error("Cannot save a null user or a user with a null UID.");
             return;
@@ -168,7 +176,7 @@ public void saveUser(com.example.price_comparator.model.User user) {
         return future;
     }
 
-    public long getLastAmazonFetchTimestamp() {
+    public CompletableFuture<Long> getLastAmazonFetchTimestamp() {
         DatabaseReference ref = database.getReference("metadata/lastAmazonFetch");
         CompletableFuture<Long> future = new CompletableFuture<>();
         ref.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -183,12 +191,7 @@ public void saveUser(com.example.price_comparator.model.User user) {
                 future.completeExceptionally(databaseError.toException());
             }
         });
-        try {
-            return future.get();
-        } catch (Exception e) {
-            logger.error("Error fetching last Amazon fetch timestamp", e);
-            return 0;
-        }
+        return future.orTimeout(30, java.util.concurrent.TimeUnit.SECONDS);
     }
 
     public void updateLastAmazonFetchTimestamp(long timestamp) {

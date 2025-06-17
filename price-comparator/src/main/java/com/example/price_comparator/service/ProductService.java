@@ -48,14 +48,14 @@ public class ProductService {
 
     public List<ProductDocument> getFeaturedProducts(int limit) {
         logger.info("Fetching {} featured products", limit);
-        List<ProductDocument> allProducts = firebaseService.getAllProducts();
+        List<ProductDocument> allProducts = firebaseService.getAllProducts().join();
         allProducts.forEach(this::retainOnlyAmazonRetailer);
         return allProducts.subList(0, Math.min(limit, allProducts.size()));
     }
 
     public List<ProductDocument> getTrendingProducts() {
         logger.info("Fetching trending products");
-        List<ProductDocument> allProducts = firebaseService.getAllProducts();
+        List<ProductDocument> allProducts = firebaseService.getAllProducts().join();
         allProducts.forEach(this::retainOnlyAmazonRetailer);
         return allProducts.subList(0, Math.min(10, allProducts.size()));
     }
@@ -191,7 +191,7 @@ public class ProductService {
 
     public List<ProductDocument> getAllProducts() {
         logger.info("Fetching all products");
-        List<ProductDocument> products = firebaseService.getAllProducts();
+        List<ProductDocument> products = firebaseService.getAllProducts().join();
         products.forEach(this::retainOnlyAmazonRetailer);
         return products;
     }
@@ -203,7 +203,7 @@ public class ProductService {
         }
 
         // First, search in Firebase
-        List<ProductDocument> localResults = firebaseService.searchProductsByName(query);
+        List<ProductDocument> localResults = firebaseService.searchProductsByName(query).join();
         if (!localResults.isEmpty()) {
             logger.info("Found {} products in Firebase for query: {}", localResults.size(), query);
             localResults.forEach(this::retainOnlyAmazonRetailer);

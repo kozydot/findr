@@ -33,7 +33,7 @@ public class ScheduledTasksService {
     public void scheduleHourlyProductUpdate() {
         logger.info("Scheduled task: Starting hourly product update...");
 
-        long lastFetchTime = firebaseService.getLastAmazonFetchTimestamp();
+        long lastFetchTime = firebaseService.getLastAmazonFetchTimestamp().join();
         long currentTime = System.currentTimeMillis();
         long oneHourInMillis = TimeUnit.HOURS.toMillis(1);
 
