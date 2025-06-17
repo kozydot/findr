@@ -154,7 +154,7 @@ public class ProductService {
                 if (!shoppingProducts.isEmpty()) {
                     logger.info("Found {} offers on Shopping for: {}", shoppingProducts.size(), product.getName());
                     List<RetailerInfo> offers = shoppingProducts.parallelStream()
-                        .filter(scrapedProduct -> isMatch(product.getName(), scrapedProduct.getTitle()))
+                        .filter(scrapedProduct -> isMatch(product, scrapedProduct))
                         .map(this::mapToRetailerInfo)
                         .collect(Collectors.toList());
                     List<RetailerInfo> allOffers = new ArrayList<>();
@@ -236,12 +236,39 @@ public class ProductService {
         return retailerInfo;
     }
 
-    private boolean isMatch(String originalTitle, String scrapedTitle) {
-        if (originalTitle == null || scrapedTitle == null) {
+    private boolean isMatch(ProductDocument originalProduct, ShoppingProduct scrapedProduct) {
+        if (originalProduct == null || scrapedProduct == null || scrapedProduct.getTitle() == null) {
             return false;
         }
+
+        // Create a detailed string for the original product
+        StringBuilder originalDetails = new StringBuilder();
+        originalDetails.append(originalProduct.getName());
+        if (originalProduct.getBrand() != null) {
+            originalDetails.append(" ").append(originalProduct.getBrand());
+        }
+        if (originalProduct.getModel() != null) {
+            originalDetails.append(" ").append(originalProduct.getModel());
+        }
+
+        // Create a detailed string for the scraped product
+        StringBuilder scrapedDetailsBuilder = new StringBuilder();
+        scrapedDetailsBuilder.append(scrapedProduct.getTitle());
+        if (scrapedProduct.getDescription() != null) {
+            scrapedDetailsBuilder.append(" ").append(scrapedProduct.getDescription());
+        }
+        if (scrapedProduct.getSpecifications() != null) {
+            for (com.example.price_comparator.model.SpecificationInfo spec : scrapedProduct.getSpecifications()) {
+                scrapedDetailsBuilder.append(" ").append(spec.getName()).append(" ").append(spec.getValue());
+            }
+        }
+        String scrapedDetails = scrapedDetailsBuilder.toString();
+
         org.apache.commons.text.similarity.JaroWinklerSimilarity jaroWinkler = new org.apache.commons.text.similarity.JaroWinklerSimilarity();
-        double similarity = jaroWinkler.apply(originalTitle.toLowerCase(), scrapedTitle.toLowerCase());
+        double similarity = jaroWinkler.apply(originalDetails.toString().toLowerCase(), scrapedDetails.toLowerCase());
+        
+        logger.debug("Comparing '{}' with '{}'. Similarity: {}", originalDetails, scrapedDetails, similarity);
+
         return similarity > 0.85; // Threshold can be adjusted
     }
 
