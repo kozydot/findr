@@ -232,73 +232,60 @@ const ProfilePage = () => {
               <h2 className="text-xl font-semibold mb-6 dark:text-white">Security Settings</h2>
               
               <div className="space-y-6">
-                <div>
-                  <h3 className="font-medium mb-3 dark:text-white">Change Password</h3>
-                  <form className="space-y-4" onSubmit={handleChangePassword}>
-                    <div>
-                      <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Current Password
-                      </label>
-                      <input
-                        id="currentPassword"
-                        type="password"
-                        className="input"
-                        placeholder="Enter your current password"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        New Password
-                      </label>
-                      <input
-                        id="newPassword"
-                        type="password"
-                        className="input"
-                        placeholder="Enter your new password"
-                      />
-                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        Must be at least 8 characters with a mix of letters, numbers, and symbols
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Confirm New Password
-                      </label>
-                      <input
-                        id="confirmPassword"
-                        type="password"
-                        className="input"
-                        placeholder="Confirm your new password"
-                      />
-                    </div>
-                    
-                    <div className="flex justify-end">
-                      <button
-                        type="submit"
-                        className="btn btn-primary"
-                      >
-                        Update Password
-                      </button>
-                    </div>
-                  </form>
-                </div>
-                
-                <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
-                  <h3 className="font-medium mb-3 dark:text-white">Two-Factor Authentication</h3>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <div>
-                      <p className="font-medium dark:text-white">Enhance your account security</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        Add an extra layer of security to your account by enabling two-factor authentication.
-                      </p>
-                    </div>
-                    <button className="btn btn-outline text-sm">
-                      Enable
-                    </button>
+                {user?.providerId !== 'google.com' && (
+                  <div>
+                    <h3 className="font-medium mb-3 dark:text-white">Change Password</h3>
+                    <form className="space-y-4" onSubmit={handleChangePassword}>
+                      <div>
+                        <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Current Password
+                        </label>
+                        <input
+                          id="currentPassword"
+                          type="password"
+                          className="input"
+                          placeholder="Enter your current password"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          New Password
+                        </label>
+                        <input
+                          id="newPassword"
+                          type="password"
+                          className="input"
+                          placeholder="Enter your new password"
+                        />
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          Must be at least 8 characters with a mix of letters, numbers, and symbols
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Confirm New Password
+                        </label>
+                        <input
+                          id="confirmPassword"
+                          type="password"
+                          className="input"
+                          placeholder="Confirm your new password"
+                        />
+                      </div>
+                      
+                      <div className="flex justify-end">
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                        >
+                          Update Password
+                        </button>
+                      </div>
+                    </form>
                   </div>
-                </div>
+                )}
                 
                 <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
                   <h3 className="font-medium text-error mb-3">Danger Zone</h3>
