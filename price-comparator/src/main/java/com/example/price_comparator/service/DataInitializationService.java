@@ -133,12 +133,10 @@ public class DataInitializationService implements ApplicationRunner {
                                 }
                             } else {
                                 logger.warn("No products fetched for category: {}", category);
-                            }
-                            
-                            // Progress indicator
+                            }                            // Progress indicator
                             double progress = (double) processedCategories[0] / categories.size() * 100;
-                            logger.info("Overall Progress: {:.1f}% ({}/{} categories)",
-                                progress, processedCategories[0], categories.size());
+                            logger.info("Overall Progress: {}% ({}/{} categories)",
+                                String.format("%.1f", progress), processedCategories[0], categories.size());
                                 
                             if (processedCategories[0] < categories.size()) {
                                 logger.info("Waiting 5 seconds before next category...");

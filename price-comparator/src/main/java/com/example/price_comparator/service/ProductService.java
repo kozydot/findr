@@ -293,20 +293,23 @@ public class ProductService {
         List<ProductDocument> products = firebaseService.getAllProducts().join();
         products.forEach(this::retainOnlyAmazonRetailer);
         return products;
-    }
-
-    public List<ProductDocument> searchProducts(String query) {
+    }    public List<ProductDocument> searchProducts(String query) {
         logger.info("Searching products with query: {}", query);
         if (query == null || query.trim().isEmpty()) {
             return getAllProducts();
         }
 
-        // First, search in Firebase
+        // First, search in Firebase with enhanced relevance scoring
         List<ProductDocument> localResults = firebaseService.searchProductsByName(query).join();
         if (!localResults.isEmpty()) {
             logger.info("Found {} products in Firebase for query: {}", localResults.size(), query);
-            localResults.forEach(this::retainOnlyAmazonRetailer);
-            return localResults;
+            
+            // Apply relevance scoring and filtering
+            List<ProductDocument> relevantResults = filterAndRankByRelevance(localResults, query);
+            logger.info("Filtered to {} relevant products after relevance scoring", relevantResults.size());
+            
+            relevantResults.forEach(this::retainOnlyAmazonRetailer);
+            return relevantResults;
         }
 
         // If not found in Firebase, then search Amazon
@@ -314,6 +317,177 @@ public class ProductService {
         List<ProductDocument> searchResults = amazonApiService.searchProducts(query).join();
         searchResults.forEach(this::saveProduct);
         return searchResults;
+    }
+    
+    /**
+     * Enhanced search algorithm that filters and ranks products by relevance
+     */
+    private List<ProductDocument> filterAndRankByRelevance(List<ProductDocument> products, String query) {
+        String normalizedQuery = query.toLowerCase().trim();
+        String[] queryTerms = normalizedQuery.split("\\s+");
+        
+        return products.stream()
+            .map(product -> {
+                double relevanceScore = calculateRelevanceScore(product, normalizedQuery, queryTerms);
+                return new ProductWithScore(product, relevanceScore);
+            })
+            .filter(pws -> pws.score >= 0.3) // Filter out products with very low relevance
+            .sorted((a, b) -> Double.compare(b.score, a.score)) // Sort by relevance score descending
+            .limit(50) // Limit results to top 50 most relevant
+            .map(pws -> pws.product)
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * Calculate relevance score for a product based on query terms
+     */
+    private double calculateRelevanceScore(ProductDocument product, String normalizedQuery, String[] queryTerms) {
+        String productName = product.getName().toLowerCase();
+        String productDescription = product.getDescription() != null ? product.getDescription().toLowerCase() : "";
+        String productBrand = product.getBrand() != null ? product.getBrand().toLowerCase() : "";
+        
+        double score = 0.0;
+        
+        // 1. Exact query match in product name (highest weight)
+        if (productName.contains(normalizedQuery)) {
+            if (productName.startsWith(normalizedQuery)) {
+                score += 10.0; // Product name starts with query
+            } else if (isMainProduct(productName, normalizedQuery)) {
+                score += 8.0; // Query appears as main product (not accessory)
+            } else {
+                score += 3.0; // Query appears somewhere in name
+            }
+        }
+        
+        // 2. Individual term matching with position weighting
+        for (String term : queryTerms) {
+            if (term.length() < 2) continue; // Skip very short terms
+            
+            // Brand matching (high priority)
+            if (productBrand.contains(term)) {
+                score += 5.0;
+            }
+            
+            // Product name term matching
+            if (productName.contains(term)) {
+                int position = productName.indexOf(term);
+                if (position == 0) {
+                    score += 4.0; // Term at beginning
+                } else if (position < productName.length() / 3) {
+                    score += 3.0; // Term in first third
+                } else {
+                    score += 1.5; // Term elsewhere
+                }
+            }
+            
+            // Description matching (lower priority)
+            if (productDescription.contains(term)) {
+                score += 1.0;
+            }
+        }
+        
+        // 3. Penalize accessory-like products
+        if (isAccessoryProduct(productName, productDescription)) {
+            score *= 0.3; // Heavily penalize accessories
+        }
+        
+        // 4. Boost main category products
+        if (isMainCategoryProduct(productName, normalizedQuery)) {
+            score *= 1.5;
+        }
+        
+        // 5. Normalize score based on query length and product name length
+        double lengthFactor = Math.min(1.0, (double) normalizedQuery.length() / productName.length());
+        score *= (0.5 + 0.5 * lengthFactor);
+        
+        return Math.max(0.0, score);
+    }
+      /**
+     * Check if the product is likely the main product category being searched for
+     */
+    private boolean isMainProduct(String productName, String query) {
+        // Check if query appears as a standalone word/model, not just mentioned
+        String[] productWords = productName.split("\\W+");
+        String[] queryWords = query.split("\\W+");
+        
+        // Look for consecutive matching words from query in product name
+        for (int i = 0; i < productWords.length - queryWords.length + 1; i++) {
+            boolean matches = true;
+            for (int j = 0; j < queryWords.length; j++) {
+                if (!productWords[i + j].equals(queryWords[j])) {
+                    matches = false;
+                    break;
+                }
+            }
+            if (matches) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Check if product is likely an accessory or peripheral item
+     */
+    private boolean isAccessoryProduct(String productName, String description) {
+        String[] accessoryKeywords = {
+            "adapter", "cable", "charger", "case", "cover", "stand", "mount", "holder",
+            "screen protector", "tempered glass", "cable", "cord", "usb", "lightning",
+            "wireless charger", "power bank", "car charger", "wall charger", "dock",
+            "headphones", "earphones", "speaker", "bluetooth", "airpods case",
+            "repair tool", "screwdriver", "kit", "tool set", "cleaning", "cleaner",
+            "stylus", "pen", "grip", "ring holder", "car mount", "dashboard",
+            "lens", "filter", "tripod", "selfie stick", "gimbal", "stabilizer"
+        };
+        
+        String combinedText = (productName + " " + description).toLowerCase();
+        
+        for (String keyword : accessoryKeywords) {
+            if (combinedText.contains(keyword)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Check if product belongs to the main category being searched
+     */
+    private boolean isMainCategoryProduct(String productName, String query) {
+        // Define main product categories and their indicators
+        if (query.contains("iphone")) {
+            return productName.matches(".*\\biphone\\s+\\d+.*") || 
+                   productName.matches(".*\\biphone\\s+(pro|mini|plus|max).*");
+        }
+        
+        if (query.contains("samsung") || query.contains("galaxy")) {
+            return productName.matches(".*\\bgalaxy\\s+\\w+\\d+.*") ||
+                   productName.matches(".*\\bsamsung\\s+galaxy.*");
+        }
+        
+        if (query.contains("macbook")) {
+            return productName.matches(".*\\bmacbook\\s+(air|pro).*");
+        }
+        
+        if (query.contains("ipad")) {
+            return productName.matches(".*\\bipad\\s+(air|pro|mini)?.*");
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Helper class to store product with its relevance score
+     */
+    private static class ProductWithScore {
+        final ProductDocument product;
+        final double score;
+        
+        ProductWithScore(ProductDocument product, double score) {
+            this.product = product;
+            this.score = score;
+        }
     }
 
     private void retainOnlyAmazonRetailer(ProductDocument product) {
@@ -389,7 +563,7 @@ public class ProductService {
         double keyTermScore = calculateKeyTermScore(originalText, scrapedText);
         totalScore += keyTermScore * 0.1;
         maxScore += 0.1;        double finalScore = maxScore > 0 ? totalScore / maxScore : 0.0;
-        boolean matches = finalScore > 0.55; 
+        boolean matches = finalScore > 0.60; 
         
         // Clean structured logging for product matching
         String result = matches ? "ACCEPTED" : "REJECTED";
