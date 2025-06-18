@@ -180,67 +180,100 @@ public class ProductService {
                         allOffers.addAll(product.getRetailers());
                         logger.info("Added {} existing offers from database", product.getRetailers().size());
                     }
-                    allOffers.addAll(offers);
-                    
-                    // Deduplication phase
+                    allOffers.addAll(offers);                    // Enhanced deduplication - First group by retailer, then by URL
                     logger.info("DEDUPLICATION PHASE - Processing {} total offers", allOffers.size());
                     
-                    // Enhanced deduplication logging
-                    java.util.Map<String, java.util.List<RetailerInfo>> groupedOffers = new java.util.HashMap<>();
-                    allOffers.forEach(offer -> {
-                        if (offer.getName() != null && offer.getProductUrl() != null) {
-                            String normalizedUrl = normalizeUrl(offer.getProductUrl());
-                            String normalizedRetailer = normalizeRetailerName(offer.getName());
-                            String key = normalizedRetailer + "|" + normalizedUrl;
-                            
-                            groupedOffers.computeIfAbsent(key, k -> new ArrayList<>()).add(offer);
-                        }
-                    });
-                    
-                    logger.info("Generated {} unique keys for deduplication", groupedOffers.size());
-                    
-                    // Log duplicates found
-                    int duplicateCount = 0;
-                    for (java.util.Map.Entry<String, java.util.List<RetailerInfo>> entry : groupedOffers.entrySet()) {
-                        if (entry.getValue().size() > 1) {
-                            duplicateCount++;
-                            double bestPrice = entry.getValue().stream().mapToDouble(RetailerInfo::getCurrentPrice).min().orElse(0.0);
-                            logger.info("DUPLICATE FOUND - Key: {} | Best Price: {}",
-                                entry.getKey().length() > 50 ? entry.getKey().substring(0, 47) + "..." : entry.getKey(),
-                                String.format("%.2f", bestPrice));
-                        }
-                    }
-                    
-                    if (duplicateCount == 0) {
-                        logger.info("No duplicates detected - all offers are unique");
-                    }
-                    
-                    java.util.Map<String, RetailerInfo> bestOffers = allOffers.stream()
+                    // Step 1: Remove exact duplicates first (same retailer + same URL)
+                    Set<String> seenKeys = new HashSet<>();
+                    List<RetailerInfo> uniqueOffers = allOffers.stream()
                         .filter(offer -> offer.getName() != null && offer.getProductUrl() != null && !offer.getProductUrl().isEmpty())
-                        .collect(Collectors.toMap(
-                            offer -> normalizeRetailerName(offer.getName()) + "|" + normalizeUrl(offer.getProductUrl()),
-                            offer -> offer,
-                            (offer1, offer2) -> offer1.getCurrentPrice() < offer2.getCurrentPrice() ? offer1 : offer2
-                        ));
-                        
-                    logger.info("DEDUPLICATION COMPLETE - {} unique offers remain", bestOffers.size());
+                        .filter(offer -> {
+                            String normalizedRetailer = normalizeRetailerName(offer.getName());
+                            String normalizedUrl = normalizeUrl(offer.getProductUrl());
+                            String uniqueKey = normalizedRetailer + "|" + normalizedUrl;
+                            
+                            if (seenKeys.contains(uniqueKey)) {
+                                logger.debug("🚫 DUPLICATE DETECTED - Removing duplicate: {} | {}", 
+                                    normalizedRetailer, normalizedUrl);
+                                return false;
+                            }
+                            seenKeys.add(uniqueKey);
+                            return true;
+                        })
+                        .collect(Collectors.toList());
                     
-                    List<RetailerInfo> finalOffers = bestOffers.values().stream()
+                    logger.info("Generated {} unique keys for deduplication", seenKeys.size());
+                    if (allOffers.size() > uniqueOffers.size()) {
+                        logger.info("No duplicates detected - all offers are unique");
+                    } else {
+                        logger.info("Removed {} exact duplicate offers", allOffers.size() - uniqueOffers.size());
+                    }
+                    
+                    // Step 2: Group by retailer name to limit one offer per retailer
+                    java.util.Map<String, java.util.List<RetailerInfo>> offersByRetailer = uniqueOffers.stream()
+                        .collect(Collectors.groupingBy(offer -> normalizeRetailerName(offer.getName())));
+                      // Step 3: For each retailer, keep only the best offer (lowest price)
+                    java.util.Map<String, RetailerInfo> bestOffersByRetailer = new java.util.HashMap<>();
+                    for (java.util.Map.Entry<String, java.util.List<RetailerInfo>> entry : offersByRetailer.entrySet()) {
+                        String retailerName = entry.getKey();
+                        java.util.List<RetailerInfo> retailerOffers = entry.getValue();
+                        
+                        if (retailerOffers.size() > 1) {
+                            logger.info("🔄 RETAILER DEDUP - {} has {} offers, selecting best price", 
+                                retailerName, retailerOffers.size());
+                        }
+                        
+                        // Find the offer with the lowest price for this retailer
+                        RetailerInfo bestOffer = retailerOffers.stream()
+                            .min(java.util.Comparator.comparingDouble(RetailerInfo::getCurrentPrice))
+                            .orElse(retailerOffers.get(0));
+                        
+                        bestOffersByRetailer.put(retailerName, bestOffer);
+                        
+                        if (retailerOffers.size() > 1) {
+                            logger.info("✅ Selected best offer from {} with price: {}", 
+                                retailerName, String.format("%.2f", bestOffer.getCurrentPrice()));
+                        }
+                    }
+                    
+                    logger.info("RETAILER DEDUPLICATION COMPLETE - {} unique retailers remain", bestOffersByRetailer.size());
+                    
+                    // Step 4: Additional URL-based deduplication within same retailer (if needed)
+                    java.util.Map<String, RetailerInfo> finalOffers = new java.util.HashMap<>();
+                    for (RetailerInfo offer : bestOffersByRetailer.values()) {
+                        String normalizedRetailer = normalizeRetailerName(offer.getName());
+                        String normalizedUrl = normalizeUrl(offer.getProductUrl());
+                        String uniqueKey = normalizedRetailer + "|" + normalizedUrl;
+                        
+                        // If we already have an offer for this exact retailer+URL combination, keep the cheaper one
+                        if (finalOffers.containsKey(uniqueKey)) {
+                            RetailerInfo existing = finalOffers.get(uniqueKey);
+                            if (offer.getCurrentPrice() < existing.getCurrentPrice()) {
+                                finalOffers.put(uniqueKey, offer);
+                                logger.info("🔄 URL DEDUP - Replaced existing offer with better price for {}", normalizedRetailer);
+                            }
+                        } else {
+                            finalOffers.put(uniqueKey, offer);
+                        }
+                    }
+                    logger.info("DEDUPLICATION COMPLETE - {} unique offers remain", finalOffers.size());
+                    
+                    List<RetailerInfo> sortedFinalOffers = finalOffers.values().stream()
                         .sorted(java.util.Comparator.comparingDouble(RetailerInfo::getCurrentPrice))
                         .limit(5)
                         .collect(Collectors.toList());
                     
                     // Final results
-                    logger.info("FINAL RESULTS - Saving {} offers:", finalOffers.size());
-                    finalOffers.forEach((offer) -> {
+                    logger.info("FINAL RESULTS - Saving {} offers:", sortedFinalOffers.size());
+                    sortedFinalOffers.forEach((offer) -> {
                         String shortUrl = offer.getProductUrl().length() > 40 ?
                                 offer.getProductUrl().substring(0, 37) + "..." : offer.getProductUrl();
                         logger.info("  {} | Price: {} | URL: {}",
                             offer.getName(), String.format("%.2f", offer.getCurrentPrice()), shortUrl);
                     });
                     
-                    product.setRetailers(finalOffers);
-                    logger.info("Successfully saved {} offers to database", finalOffers.size());
+                    product.setRetailers(sortedFinalOffers);
+                    logger.info("Successfully saved {} offers to database", sortedFinalOffers.size());
                     saveProduct(product);
                 } else {
                     logger.warn("No Shopping offers found for: {}", product.getName());
@@ -356,7 +389,7 @@ public class ProductService {
         double keyTermScore = calculateKeyTermScore(originalText, scrapedText);
         totalScore += keyTermScore * 0.1;
         maxScore += 0.1;        double finalScore = maxScore > 0 ? totalScore / maxScore : 0.0;
-        boolean matches = finalScore > 0.55; // Lowered threshold from 0.60 to 0.55 for better matching
+        boolean matches = finalScore > 0.55; 
         
         // Clean structured logging for product matching
         String result = matches ? "ACCEPTED" : "REJECTED";
@@ -637,9 +670,7 @@ public class ProductService {
                             .filter(java.util.Objects::nonNull)
                             .collect(Collectors.toList()));
         });
-    }
-
-    /**
+    }    /**
      * Normalizes retailer names to handle variations
      */
     private String normalizeRetailerName(String retailerName) {
@@ -649,10 +680,35 @@ public class ProductService {
         
         String normalized = retailerName.toLowerCase().trim();
         
-        // Handle Amazon variations
+        // Handle Amazon variations more comprehensively
         if (normalized.contains("amazon")) {
             return "amazon";
         }
+        
+        // Handle other common retailer variations
+        if (normalized.contains("noon")) {
+            return "noon";
+        }
+        
+        if (normalized.contains("lulu") || normalized.contains("luluhypermarket")) {
+            return "lulu";
+        }
+        
+        if (normalized.contains("carrefour")) {
+            return "carrefour";
+        }
+        
+        if (normalized.contains("sharaf") || normalized.contains("sharafdg")) {
+            return "sharafdg";
+        }
+        
+        if (normalized.contains("cartlow")) {
+            return "cartlow";
+        }
+        
+        // Remove common suffixes/prefixes
+        normalized = normalized.replaceAll("\\.(ae|com|net|org)$", "");
+        normalized = normalized.replaceAll("^(www\\.|m\\.|mobile\\.)", "");
         
         return normalized;
     }

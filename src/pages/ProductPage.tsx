@@ -115,7 +115,34 @@ const ProductPage = () => {
                   const newRetailers = updatedProduct.retailers || [];
                   const existingRetailers = prevProduct.retailers || [];
                   const allRetailers = [...existingRetailers, ...newRetailers];
-                  const uniqueRetailers = allRetailers.filter((r, i, a) => a.findIndex(t => t.retailerId === r.retailerId) === i);
+                  
+                  // Advanced deduplication: prioritize by retailerId first, then by normalized name
+                  const seenRetailerIds = new Set<string>();
+                  const seenNormalizedNames = new Set<string>();
+                  
+                  const uniqueRetailers = allRetailers.filter((retailer) => {
+                    // Check for duplicate retailerId
+                    if (seenRetailerIds.has(retailer.retailerId)) {
+                      return false;
+                    }
+                    
+                    // Check for duplicate retailer names (especially Amazon variations)
+                    const normalizedName = retailer.name?.toLowerCase().replace(/[^a-z]/g, '') || '';
+                    if (normalizedName.includes('amazon')) {
+                      if (seenNormalizedNames.has('amazon')) {
+                        return false;
+                      }
+                      seenNormalizedNames.add('amazon');
+                    } else if (normalizedName && seenNormalizedNames.has(normalizedName)) {
+                      return false;
+                    } else if (normalizedName) {
+                      seenNormalizedNames.add(normalizedName);
+                    }
+                    
+                    seenRetailerIds.add(retailer.retailerId);
+                    return true;
+                  });
+                  
                   newProductData.retailers = uniqueRetailers;
                 }
 
