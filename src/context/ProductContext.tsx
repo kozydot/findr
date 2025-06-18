@@ -53,8 +53,8 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
             setFeaturedProducts([]);
           }
           setError(null);
-        } catch (err: any) {
-          setError(err.message || 'Failed to fetch products');
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to fetch products');
         } finally {
           setLoading(false);
         }
@@ -76,30 +76,72 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
   
-  const getProductById = useCallback((id: string): Product | undefined => {
-    return products.find(product => product.id === id);
-  }, [products]);
+  // Helper functions for relevance scoring
+  const extractBrandFromName = useCallback((productName: string): string => {
+    const words = productName.toLowerCase().split(/\s+/);
+    if (words.length > 0) {
+      const firstWord = words[0];
+      // Common brand names
+      if (['apple', 'samsung', 'google', 'microsoft', 'sony', 'lg', 'dell', 'hp', 'lenovo', 'asus'].includes(firstWord)) {
+        return firstWord;
+      }
+    }
+    return '';
+  }, []);
   
-  const searchProducts = useCallback((query: string): Product[] => {
-    if (!query) return products;
+  const isMainProduct = useCallback((productName: string, query: string): boolean => {
+    const productWords = productName.split(/\W+/);
+    const queryWords = query.split(/\W+/);
     
-    const normalizedQuery = query.toLowerCase().trim();
-    const queryTerms = normalizedQuery.split(/\s+/);
-    
-    // Enhanced search with relevance scoring
-    const productsWithScores = products.map(product => {
-      const score = calculateRelevanceScore(product, normalizedQuery, queryTerms);
-      return { product, score };
-    });
-    
-    return productsWithScores
-      .filter(({ score }) => score >= 0.3) // Filter out irrelevant products
-      .sort((a, b) => b.score - a.score) // Sort by relevance score
-      .slice(0, 50) // Limit to top 50 results
-      .map(({ product }) => product);
-  }, [products]);
+    // Look for consecutive matching words from query in product name
+    for (let i = 0; i <= productWords.length - queryWords.length; i++) {
+      let matches = true;
+      for (let j = 0; j < queryWords.length; j++) {
+        if (productWords[i + j] !== queryWords[j]) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) return true;
+    }
+    return false;
+  }, []);
   
-  const calculateRelevanceScore = (product: Product, normalizedQuery: string, queryTerms: string[]): number => {
+  const isAccessoryProduct = useCallback((productName: string, description: string): boolean => {
+    const accessoryKeywords = [
+      'adapter', 'cable', 'charger', 'case', 'cover', 'stand', 'mount', 'holder',
+      'screen protector', 'tempered glass', 'usb', 'lightning',
+      'wireless charger', 'power bank', 'car charger', 'wall charger', 'dock',
+      'headphones', 'earphones', 'speaker', 'bluetooth', 'airpods case',
+      'repair tool', 'screwdriver', 'kit', 'tool set', 'cleaning', 'cleaner',
+      'stylus', 'pen', 'grip', 'ring holder', 'car mount', 'dashboard'
+    ];
+    
+    const combinedText = (productName + ' ' + description).toLowerCase();
+    return accessoryKeywords.some(keyword => combinedText.includes(keyword));
+  }, []);
+  
+  const isMainCategoryProduct = useCallback((productName: string, query: string): boolean => {
+    if (query.includes('iphone')) {
+      return /\biphone\s+\d+/.test(productName) || /\biphone\s+(pro|mini|plus|max)/.test(productName);
+    }
+    
+    if (query.includes('samsung') || query.includes('galaxy')) {
+      return /\bgalaxy\s+\w+\d+/.test(productName) || /\bsamsung\s+galaxy/.test(productName);
+    }
+    
+    if (query.includes('macbook')) {
+      return /\bmacbook\s+(air|pro)/.test(productName);
+    }
+    
+    if (query.includes('ipad')) {
+      return /\bipad\s+(air|pro|mini)?/.test(productName);
+    }
+    
+    return false;
+  }, []);
+
+  const calculateRelevanceScore = useCallback((product: Product, normalizedQuery: string, queryTerms: string[]): number => {
     const productName = product.name.toLowerCase();
     const productDescription = product.description?.toLowerCase() || '';
     
@@ -157,72 +199,31 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     }
     
     return Math.max(0, score);
-  };
-  
-  const extractBrandFromName = (productName: string): string => {
-    const words = productName.toLowerCase().split(/\s+/);
-    if (words.length > 0) {
-      const firstWord = words[0];
-      // Common brand names
-      if (['apple', 'samsung', 'google', 'microsoft', 'sony', 'lg', 'dell', 'hp', 'lenovo', 'asus'].includes(firstWord)) {
-        return firstWord;
-      }
-    }
-    return '';
-  };
-  
-  const isMainProduct = (productName: string, query: string): boolean => {
-    const productWords = productName.split(/\W+/);
-    const queryWords = query.split(/\W+/);
-    
-    // Look for consecutive matching words from query in product name
-    for (let i = 0; i <= productWords.length - queryWords.length; i++) {
-      let matches = true;
-      for (let j = 0; j < queryWords.length; j++) {
-        if (productWords[i + j] !== queryWords[j]) {
-          matches = false;
-          break;
-        }
-      }
-      if (matches) return true;
-    }
-    return false;
-  };
-  
-  const isAccessoryProduct = (productName: string, description: string): boolean => {
-    const accessoryKeywords = [
-      'adapter', 'cable', 'charger', 'case', 'cover', 'stand', 'mount', 'holder',
-      'screen protector', 'tempered glass', 'usb', 'lightning',
-      'wireless charger', 'power bank', 'car charger', 'wall charger', 'dock',
-      'headphones', 'earphones', 'speaker', 'bluetooth', 'airpods case',
-      'repair tool', 'screwdriver', 'kit', 'tool set', 'cleaning', 'cleaner',
-      'stylus', 'pen', 'grip', 'ring holder', 'car mount', 'dashboard'
-    ];
-    
-    const combinedText = (productName + ' ' + description).toLowerCase();
-    return accessoryKeywords.some(keyword => combinedText.includes(keyword));
-  };
-  
-  const isMainCategoryProduct = (productName: string, query: string): boolean => {
-    if (query.includes('iphone')) {
-      return /\biphone\s+\d+/.test(productName) || /\biphone\s+(pro|mini|plus|max)/.test(productName);
-    }
-    
-    if (query.includes('samsung') || query.includes('galaxy')) {
-      return /\bgalaxy\s+\w+\d+/.test(productName) || /\bsamsung\s+galaxy/.test(productName);
-    }
-    
-    if (query.includes('macbook')) {
-      return /\bmacbook\s+(air|pro)/.test(productName);
-    }
-    
-    if (query.includes('ipad')) {
-      return /\bipad\s+(air|pro|mini)?/.test(productName);
-    }
-    
-    return false;
-  };
+  }, [extractBrandFromName, isMainProduct, isAccessoryProduct, isMainCategoryProduct]);
 
+  const getProductById = useCallback((id: string): Product | undefined => {
+    return products.find(product => product.id === id);
+  }, [products]);
+  
+  const searchProducts = useCallback((query: string): Product[] => {
+    if (!query) return products;
+    
+    const normalizedQuery = query.toLowerCase().trim();
+    const queryTerms = normalizedQuery.split(/\s+/);
+    
+    // Enhanced search with relevance scoring
+    const productsWithScores = products.map(product => {
+      const score = calculateRelevanceScore(product, normalizedQuery, queryTerms);
+      return { product, score };
+    });
+    
+    return productsWithScores
+      .filter(({ score }) => score >= 0.3) // Filter out irrelevant products
+      .sort((a, b) => b.score - a.score) // Sort by relevance score
+      .slice(0, 50) // Limit to top 50 results
+      .map(({ product }) => product);
+  }, [products, calculateRelevanceScore]);
+  
   return (
     <ProductContext.Provider value={{ products, featuredProducts, loading, error, getProductById, searchProducts }}>
       {children}

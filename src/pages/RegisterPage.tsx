@@ -41,8 +41,8 @@ const RegisterPage = () => {
       // For the mock: simulate a successful registration
       await register(name, email, password);
       navigate('/');
-    } catch (err: any) {
-      setError(err.message || 'Failed to register');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to register');
     } finally {
       setIsLoading(false);
     }
@@ -55,8 +55,8 @@ const RegisterPage = () => {
         await signInWithGoogle();
       }
       navigate('/');
-    } catch (err: any) {
-      setError(err.message || `Failed to sign up with ${provider}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Failed to sign up with ${provider}`);
     } finally {
       setIsLoading(false);
     }

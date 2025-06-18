@@ -21,7 +21,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   
   
   return (
-    <div className="card group h-full flex flex-col">
+    <div className="card group h-full flex flex-col transition-smooth hover:scale-[1.02] hover:shadow-xl">
       {/* Image and alert button */}
       <div className="relative overflow-hidden">
         <Link to={`/product/${product.id}`}>
@@ -101,10 +101,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <div className="mt-auto">
           <Link 
             to={`/product/${product.id}`}
-            className="inline-flex items-center text-sm font-medium text-primary hover:underline"
+            className="inline-flex items-center text-sm font-medium text-primary hover:underline transition-smooth hover:text-primary/80 group-hover:translate-x-1"
           >
             View full comparison
-            <ChevronRight size={16} className="ml-1" />
+            <ChevronRight size={16} className="ml-1 transition-smooth group-hover:translate-x-1" />
           </Link>
         </div>
       </div>

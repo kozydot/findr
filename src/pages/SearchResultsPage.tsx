@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { 
-  Filter, SortDesc, Grid, List, 
+  Filter, Grid, List, 
   X, ChevronDown, Star, Check
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
@@ -72,8 +72,8 @@ const SearchResultsPage = () => {
           } else {
             setPriceRange([0, 5000]);
           }
-        } catch (error: any) {
-          setProductsError(error.message);
+        } catch (error) {
+          setProductsError(error instanceof Error ? error.message : 'An error occurred');
         } finally {
           setProductsLoading(false);
         }

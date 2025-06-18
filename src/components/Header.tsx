@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Search, Menu, X, ShoppingCart, Bookmark, User } from 'lucide-react';
+import { Menu, X, Bookmark, User } from 'lucide-react';
 import SearchBar from './SearchBar';
 import ThemeToggle from './ThemeToggle';
 
@@ -53,22 +53,31 @@ const Header = () => {
           <nav className="hidden md:flex items-center space-x-8">
             <Link
               to="/"
-              className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/' ? 'text-primary' : 'text-secondary dark:text-gray-300'}`}
+              className={`text-sm font-medium transition-smooth hover:text-primary hover:scale-105 relative ${location.pathname === '/' ? 'text-primary' : 'text-secondary dark:text-gray-300'}`}
             >
               Home
+              {location.pathname === '/' && (
+                <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary rounded-full"></span>
+              )}
             </Link>
             <Link
               to="/search"
-              className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/search' ? 'text-primary' : 'text-secondary dark:text-gray-300'}`}
+              className={`text-sm font-medium transition-smooth hover:text-primary hover:scale-105 relative ${location.pathname === '/search' ? 'text-primary' : 'text-secondary dark:text-gray-300'}`}
             >
               Compare
+              {location.pathname === '/search' && (
+                <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary rounded-full"></span>
+              )}
             </Link>
             {isAuthenticated && (
               <Link
                 to="/bookmarks"
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/bookmarks' ? 'text-primary' : 'text-secondary dark:text-gray-300'}`}
+                className={`text-sm font-medium transition-smooth hover:text-primary hover:scale-105 relative ${location.pathname === '/bookmarks' ? 'text-primary' : 'text-secondary dark:text-gray-300'}`}
               >
                 My Bookmarks
+                {location.pathname === '/bookmarks' && (
+                  <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary rounded-full"></span>
+                )}
               </Link>
             )}
           </nav>
@@ -84,22 +93,22 @@ const Header = () => {
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
                 <ThemeToggle />
-                <Link to="/bookmarks" className="text-secondary dark:text-gray-300 hover:text-primary transition-colors">
+                <Link to="/bookmarks" className="text-secondary dark:text-gray-300 hover:text-primary transition-smooth hover:scale-110">
                   <Bookmark size={20} />
                 </Link>
                 <div className="relative group">
-                  <button className="flex items-center space-x-2 focus:outline-none">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <button className="flex items-center space-x-2 focus:outline-none transition-smooth hover:scale-105">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary transition-smooth group-hover:bg-primary/20">
                       {user?.name?.charAt(0) || <User size={16} />}
                     </div>
                   </button>
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 border dark:border-gray-700">
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 border dark:border-gray-700 transform translate-y-2 group-hover:translate-y-0">
                     <div className="py-2">
-                      <Link to="/profile" className="block px-4 py-2 text-sm text-secondary dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Profile</Link>
-                      <Link to="/bookmarks" className="block px-4 py-2 text-sm text-secondary dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">My Bookmarks</Link>
+                      <Link to="/profile" className="block px-4 py-2 text-sm text-secondary dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-smooth hover:translate-x-1">Profile</Link>
+                      <Link to="/bookmarks" className="block px-4 py-2 text-sm text-secondary dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-smooth hover:translate-x-1">My Bookmarks</Link>
                       <button
                         onClick={handleLogout}
-                        className="block w-full text-left px-4 py-2 text-sm text-secondary dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        className="block w-full text-left px-4 py-2 text-sm text-secondary dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-smooth hover:translate-x-1"
                       >
                         Logout
                       </button>
@@ -110,10 +119,10 @@ const Header = () => {
             ) : (
               <div className="flex items-center space-x-4">
                 <ThemeToggle />
-                <Link to="/login" className="text-sm font-medium text-secondary dark:text-gray-300 hover:text-primary transition-colors">
+                <Link to="/login" className="text-sm font-medium text-secondary dark:text-gray-300 hover:text-primary transition-smooth hover:scale-105">
                   Login
                 </Link>
-                <Link to="/register" className="btn btn-primary text-sm py-2">
+                <Link to="/register" className="btn btn-primary text-sm py-2 transition-bounce hover:scale-105 hover:shadow-lg">
                   Sign Up
                 </Link>
               </div>
@@ -123,7 +132,7 @@ const Header = () => {
           {/* Mobile Menu Button */}
           <button 
             onClick={toggleMenu}
-            className="md:hidden flex items-center text-secondary dark:text-gray-300 focus:outline-none"
+            className="md:hidden flex items-center text-secondary dark:text-gray-300 focus:outline-none transition-smooth hover:scale-110 hover:text-primary"
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>

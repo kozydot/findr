@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Search, Zap, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import SearchBar from '../components/SearchBar';
 import ProductCard from '../components/ProductCard';
 import { useProducts } from '../context/ProductContext';
 import { useAuth } from '../context/AuthContext';

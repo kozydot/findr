@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Share2, Star, ChevronRight, ArrowLeft, ChevronLeft,
-  ShoppingCart, Heart, X, ExternalLink
+  ShoppingCart, X, ExternalLink
 } from 'lucide-react';
 import PriceComparisonTable from '../components/PriceComparisonTable';
 import { Product } from '../types';
@@ -79,8 +79,9 @@ const ProductPage = () => {
 
               // Merge other properties, avoiding null overwrites
               Object.keys(updatedProduct).forEach(key => {
-                if (updatedProduct[key as keyof Product] !== null && updatedProduct[key as keyof Product] !== undefined) {
-                  (newProductData as any)[key] = updatedProduct[key as keyof Product];
+                const typedKey = key as keyof Product;
+                if (updatedProduct[typedKey] !== null && updatedProduct[typedKey] !== undefined) {
+                  (newProductData as Record<string, unknown>)[key] = updatedProduct[typedKey];
                 }
               });
               
@@ -114,9 +115,9 @@ const ProductPage = () => {
             }
           }
         }
-      } catch (err: any) {
+      } catch (err) {
         if (isMounted) {
-          setError(err.message);
+          setError(err instanceof Error ? err.message : 'An error occurred');
         }
       } finally {
         if (isMounted) {

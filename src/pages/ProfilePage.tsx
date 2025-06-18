@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Bell, User, Mail, Lock, LogOut, Save, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Lock, LogOut, Save, Eye, EyeOff } from 'lucide-react';
 
 const ProfilePage = () => {
   const { user, logout, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'account' | 'notifications' | 'security'>('account');
   const [isEditing, setIsEditing] = useState(false);
-  const [showConfirmLogout, setShowConfirmLogout] = useState(false);
-    // Form states
+  const [showConfirmLogout, setShowConfirmLogout] = useState(false);    // Form states
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   
@@ -15,25 +14,10 @@ const ProfilePage = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  // Notification settings
-  const [notificationSettings, setNotificationSettings] = useState({
-    priceAlerts: true,
-    priceDrops: true,
-    dealOfTheDay: true,
-    newsletter: false,
-  });
-  
   const handleUpdateProfile = (e: React.FormEvent) => {
     e.preventDefault();
     updateUser({ name, email });
     setIsEditing(false);
-  };
-  
-  const handleToggleNotification = (key: keyof typeof notificationSettings) => {
-    setNotificationSettings(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
   };
   
   const confirmLogout = () => {
@@ -59,8 +43,7 @@ const ProfilePage = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ password: newPassword }),
         });
-        alert("Password updated successfully");
-      } catch (error) {
+        alert("Password updated successfully");      } catch {
         alert("Failed to update password");
       }
     }
@@ -72,8 +55,7 @@ const ProfilePage = () => {
         await fetch(`http://localhost:8081/auth/${user.id}`, { method: 'DELETE' });
         logout();
         alert("Account deleted successfully");
-        window.location.href = "/";
-      } catch (error) {
+        window.location.href = "/";      } catch {
         alert("Failed to delete account");
       }
     }

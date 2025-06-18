@@ -30,8 +30,8 @@ const LoginPage = () => {
       // For the mock: simulate a successful login
       await login(email, password);
       navigate(from, { replace: true });
-    } catch (err: any) {
-      setError(err.message || 'Failed to login');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to login');
     } finally {
       setIsLoading(false);
     }
@@ -44,8 +44,8 @@ const LoginPage = () => {
         await signInWithGoogle();
       }
       navigate(from, { replace: true });
-    } catch (err: any) {
-      setError(err.message || `Failed to login with ${provider}`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : `Failed to login with ${provider}`);
     } finally {
       setIsLoading(false);
     }

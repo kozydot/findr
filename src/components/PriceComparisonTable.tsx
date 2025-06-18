@@ -1,4 +1,4 @@
-import { ShoppingCart, ExternalLink, ArrowDown, ArrowUp } from 'lucide-react';
+import { ShoppingCart, ExternalLink } from 'lucide-react';
 import { Retailer } from '../types';
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
@@ -12,7 +12,6 @@ interface PriceComparisonTableProps {
 
 const PriceComparisonTable = ({ retailers, currency }: PriceComparisonTableProps) => {
   const { id } = useParams<{ id: string }>();
-  const [loadingProgress, setLoadingProgress] = useState(0);
   const [isComparisonLoading, setIsComparisonLoading] = useState(true);
 
   useEffect(() => {
@@ -22,11 +21,9 @@ const PriceComparisonTable = ({ retailers, currency }: PriceComparisonTableProps
     }
 
     const client = new Client({
-      webSocketFactory: () => new SockJS('/ws'),
-      onConnect: () => {
+      webSocketFactory: () => new SockJS('/ws'),      onConnect: () => {
         client.subscribe(`/topic/products/${id}/progress`, message => {
           const progress = Number(message.body);
-          setLoadingProgress(progress);
           if (progress === 100) {
             setTimeout(() => setIsComparisonLoading(false), 1000);
           }
@@ -67,15 +64,8 @@ const PriceComparisonTable = ({ retailers, currency }: PriceComparisonTableProps
   const sortedRetailers = [...retailers].sort((a, b) => a.currentPrice - b.currentPrice);
 
   const processedRetailers = sortedRetailers;
-  
-  // Get lowest price for highlighting
+    // Get lowest price for highlighting
   const lowestPrice = sortedRetailers[0]?.currentPrice;
-  
-  // Calculate price change
-  const getPriceChange = (retailer: Retailer) => {
-    if (!retailer.priceHistory || retailer.priceHistory.length < 2) return 0;
-    return retailer.priceHistory[0].price - retailer.priceHistory[1].price;
-  };
   
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
