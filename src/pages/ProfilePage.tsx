@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Bell, User, Mail, Lock, LogOut, Save } from 'lucide-react';
+import { Bell, User, Mail, Lock, LogOut, Save, Eye, EyeOff } from 'lucide-react';
 
 const ProfilePage = () => {
   const { user, logout, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'account' | 'notifications' | 'security'>('account');
   const [isEditing, setIsEditing] = useState(false);
   const [showConfirmLogout, setShowConfirmLogout] = useState(false);
-  
-  // Form states
+    // Form states
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
+  
+  // Password visibility states
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Notification settings
   const [notificationSettings, setNotificationSettings] = useState({
@@ -247,17 +250,26 @@ const ProfilePage = () => {
                           placeholder="Enter your current password"
                         />
                       </div>
-                      
-                      <div>
+                        <div>
                         <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           New Password
                         </label>
-                        <input
-                          id="newPassword"
-                          type="password"
-                          className="input"
-                          placeholder="Enter your new password"
-                        />
+                        <div className="relative">
+                          <input
+                            id="newPassword"
+                            type={showNewPassword ? 'text' : 'password'}
+                            className="input pr-12"
+                            placeholder="Enter your new password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                            aria-label={showNewPassword ? "Hide password" : "Show password"}
+                          >
+                            {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                          </button>
+                        </div>
                         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                           Must be at least 8 characters with a mix of letters, numbers, and symbols
                         </p>
@@ -267,12 +279,22 @@ const ProfilePage = () => {
                         <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Confirm New Password
                         </label>
-                        <input
-                          id="confirmPassword"
-                          type="password"
-                          className="input"
-                          placeholder="Confirm your new password"
-                        />
+                        <div className="relative">
+                          <input
+                            id="confirmPassword"
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            className="input pr-12"
+                            placeholder="Confirm your new password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                            aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                          >
+                            {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                          </button>
+                        </div>
                       </div>
                       
                       <div className="flex justify-end">

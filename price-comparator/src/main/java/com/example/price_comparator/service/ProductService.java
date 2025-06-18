@@ -603,7 +603,7 @@ public class ProductService {
         double keyTermScore = calculateKeyTermScore(originalText, scrapedText);
         totalScore += keyTermScore * 0.1;
         maxScore += 0.1;        double finalScore = maxScore > 0 ? totalScore / maxScore : 0.0;
-        boolean matches = finalScore > 0.63; 
+        boolean matches = finalScore > 0.64; 
         
         // Clean structured logging for product matching
         String result = matches ? "ACCEPTED" : "REJECTED";

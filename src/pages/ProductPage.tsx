@@ -177,7 +177,7 @@ const ProductPage = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showImageModal, allImages.length]);
 
-  // Handle image click
+  // Handle image click with animation
   const handleImageClick = () => {
     setIsImageClicked(true);
     // Reset animation state after animation completes

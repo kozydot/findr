@@ -83,13 +83,11 @@ const HomePage = () => {
               variants={itemVariants}
             >
               Find the Best Deals Across UAE's Top Retailers
-            </motion.h1>
-            
-            <motion.p 
+            </motion.h1>            <motion.p 
               className="text-white/90 text-lg md:text-xl mb-10"
               variants={itemVariants}
             >
-              Compare prices, track price history, and get alerts when prices drop on your favorite products.
+              Discover the best prices with intelligent search across UAE's leading retailers. Find exactly what you're looking for with smart product matching and instant price comparisons.
             </motion.p>
               <motion.div variants={itemVariants}>
               <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
