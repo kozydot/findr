@@ -225,10 +225,27 @@ public class AmazonApiService implements RetailerApiService {
 
                         product.setStorage(extractAttribute(specifications, "storage capacity"));
                         product.setRam(extractAttribute(specifications, "ram"));
-                        product.setColor(extractAttribute(specifications, "color"));
-                    }
+                        product.setColor(extractAttribute(specifications, "color"));                    }
 
-                    product.setPhotos(productJson.getJSONArray("product_photos").toList().stream().map(Object::toString).collect(Collectors.toList()));
+                    // Set photos if available
+                    if (productJson.has("product_photos") && !productJson.isNull("product_photos")) {
+                        try {
+                            JSONArray photosArray = productJson.getJSONArray("product_photos");
+                            List<String> photosList = new ArrayList<>();
+                            for (int i = 0; i < photosArray.length(); i++) {
+                                String photoUrl = photosArray.optString(i);
+                                if (photoUrl != null && !photoUrl.isEmpty()) {
+                                    photosList.add(photoUrl);
+                                }
+                            }
+                            if (!photosList.isEmpty()) {
+                                product.setPhotos(photosList);
+                            }
+                        } catch (Exception e) {
+                            // Log but don't fail if photos can't be parsed
+                            System.err.println("Could not parse product photos: " + e.getMessage());
+                        }
+                    }
 
                     String priceString = productJson.optString("product_price", null);
                     if (priceString != null && !priceString.isEmpty()) {

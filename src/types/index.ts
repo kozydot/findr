@@ -25,6 +25,7 @@ export interface Product {
   name: string;
   description: string;
   imageUrl: string;
+  photos?: string[]; // Additional product images
   rating: number;
   reviews: number;
   retailers: Retailer[];
