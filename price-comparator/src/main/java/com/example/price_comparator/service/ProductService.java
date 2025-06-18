@@ -162,13 +162,18 @@ public class ProductService {
                     
                     // Product matching phase
                     logger.info("PRODUCT MATCHING PHASE - Processing {} offers", shoppingProducts.size());
-                    
-                    List<RetailerInfo> offers = shoppingProducts.parallelStream()
+                      List<RetailerInfo> offers = shoppingProducts.parallelStream()
                         .filter(scrapedProduct -> isMatch(product, scrapedProduct))
                         .map(this::mapToRetailerInfo)
                         .collect(Collectors.toList());
                     
                     logger.info("MATCHING COMPLETE - Accepted {} offers after filtering", offers.size());
+                    
+                    // Log summary if no matches found
+                    if (offers.isEmpty()) {
+                        logger.warn("⚠️  NO MATCHES FOUND - All {} offers were rejected. Consider lowering matching threshold.", shoppingProducts.size());
+                        logger.info("💡 Top rejected scores: Check logs above for specific scores and reasons");
+                    }
                     
                     List<RetailerInfo> allOffers = new ArrayList<>();
                     if (product.getRetailers() != null) {
@@ -327,34 +332,31 @@ public class ProductService {
 
         String originalText = originalDetails.toString().toLowerCase();
         String scrapedText = scrapedDetails.toLowerCase();
-        
-        // Intelligent matching approach using specification comparison
+          // Intelligent matching approach using specification comparison
         double totalScore = 0.0;
         double maxScore = 0.0;
         
-        // 1. Core text similarity (40% weight)
+        // 1. Core text similarity (50% weight) - Increased from 40%
         org.apache.commons.text.similarity.JaroWinklerSimilarity jaroWinkler = new org.apache.commons.text.similarity.JaroWinklerSimilarity();
         double jaroWinklerScore = jaroWinkler.apply(originalText, scrapedText);
-        totalScore += jaroWinklerScore * 0.4;
-        maxScore += 0.4;
+        totalScore += jaroWinklerScore * 0.5;
+        maxScore += 0.5;
         
-        // 2. Brand matching (20% weight)
+        // 2. Brand matching (25% weight) - Increased from 20%
         double brandScore = calculateBrandScore(originalProduct, scrapedText);
-        totalScore += brandScore * 0.2;
-        maxScore += 0.2;
+        totalScore += brandScore * 0.25;
+        maxScore += 0.25;
         
-        // 3. Specification-based matching (30% weight) - Universal approach
+        // 3. Specification-based matching (15% weight) - Reduced from 30%
         double specScore = calculateSpecificationScore(originalProduct, scrapedProduct);
-        totalScore += specScore * 0.3;
-        maxScore += 0.3;
+        totalScore += specScore * 0.15;
+        maxScore += 0.15;
         
-        // 4. Key terms overlap (10% weight)
+        // 4. Key terms overlap (10% weight) - Same as before
         double keyTermScore = calculateKeyTermScore(originalText, scrapedText);
         totalScore += keyTermScore * 0.1;
-        maxScore += 0.1;
-        
-        double finalScore = maxScore > 0 ? totalScore / maxScore : 0.0;
-        boolean matches = finalScore > 0.65;
+        maxScore += 0.1;        double finalScore = maxScore > 0 ? totalScore / maxScore : 0.0;
+        boolean matches = finalScore > 0.55; // Lowered threshold from 0.60 to 0.55 for better matching
         
         // Clean structured logging for product matching
         String result = matches ? "ACCEPTED" : "REJECTED";
@@ -366,21 +368,24 @@ public class ProductService {
                 originalDetails.toString().substring(0, 37) + "..." : originalDetails.toString(),
             scrapedProduct.getTitle().length() > 40 ?
                 scrapedProduct.getTitle().substring(0, 37) + "..." : scrapedProduct.getTitle());
-                
-        // Only log detailed breakdown for matches or close misses
+                  // Only log detailed breakdown for matches or close misses
         if (matches || finalScore > 0.5) {
-            logger.info("MATCH ANALYSIS - {} (Score: {})", result, String.format("%.3f", finalScore));
-            logger.info("  Text: {} | Brand: {} | Specs: {} | Terms: {}",
+            logger.info("MATCH ANALYSIS - {} (Score: {}) | {}", 
+                result, 
+                String.format("%.3f", finalScore),
+                matches ? "✅ ACCEPTED" : "❌ REJECTED");
+            logger.info("  📊 Breakdown - Text: {} | Brand: {} | Specs: {} | Terms: {} | Product: {}",
                 String.format("%.3f", jaroWinklerScore),
                 String.format("%.3f", brandScore),
                 String.format("%.3f", specScore),
-                String.format("%.3f", keyTermScore));
+                String.format("%.3f", keyTermScore),
+                scrapedProduct.getTitle().length() > 50 ?
+                    scrapedProduct.getTitle().substring(0, 47) + "..." : scrapedProduct.getTitle());
         }
         
         return matches;
     }
-    
-    /**
+      /**
      * Universal brand scoring that works across all product categories
      */
     private double calculateBrandScore(ProductDocument originalProduct, String scrapedText) {
@@ -395,6 +400,22 @@ public class ProductService {
         if (brand != null && scrapedText.contains(brand)) {
             return 1.0;
         }
+        
+        // For renewed products, also check for the brand without "renewed" context
+        if (originalProduct.getName() != null && 
+            (originalProduct.getName().toLowerCase().contains("renewed") || 
+             originalProduct.getName().toLowerCase().contains("refurbished"))) {
+            
+            // Extract brand from the beginning of the product name
+            String[] words = originalProduct.getName().split("\\s+");
+            if (words.length > 0) {
+                String firstWord = words[0].toLowerCase();
+                if (scrapedText.contains(firstWord)) {
+                    return 1.0;
+                }
+            }
+        }
+        
         return 0.0;
     }
     
@@ -437,8 +458,7 @@ public class ProductService {
         
         return (double) matchingSpecs / totalSpecs;
     }
-    
-    /**
+      /**
      * Fallback attribute matching for products without detailed specifications
      */
     private double calculateAttributeScore(ProductDocument originalProduct, ShoppingProduct scrapedProduct) {
@@ -477,7 +497,8 @@ public class ProductService {
             }
         }
         
-        return attributes > 0 ? score / attributes : 0.7; // Default moderate score if no attributes
+        // If no specific attributes found, give a moderate score based on text similarity
+        return attributes > 0 ? score / attributes : 0.8; // Increased from 0.7 to 0.8 for better matching
     }
     
     /**
@@ -836,191 +857,7 @@ public class ProductService {
                paramName.equals("pf_rd_s") ||           // Amazon product finder tracking
                paramName.equals("pf_rd_t");             // Amazon product finder tracking
     }
-    
-    /**
+      /**
      * Extracts brand name from product title when brand field is not available
      */
-    private String extractBrandFromName(String productName) {
-        if (productName == null || productName.isEmpty()) {
-            return null;
-        }
-        
-        String lowerName = productName.toLowerCase();
-        
-        // Common electronics brands
-        String[] knownBrands = {"apple", "samsung", "razer", "logitech", "hp", "dell", "asus", "acer", "lenovo",
-                               "sony", "lg", "microsoft", "google", "amazon", "intel", "amd", "nvidia", "corsair",
-                               "steelseries", "hyperx", "bose", "beats", "jbl", "xiaomi", "huawei", "oneplus"};
-        
-        for (String brand : knownBrands) {
-            if (lowerName.contains(brand)) {
-                return brand;
-            }
-        }
-        
-        // If no known brand found, try to extract first word as potential brand
-        String[] words = productName.split("\\s+");
-        if (words.length > 0) {
-            String firstWord = words[0].toLowerCase().replaceAll("[^a-zA-Z]", "");
-            if (firstWord.length() > 2) {
-                return firstWord;
-            }
-        }
-        
-        return null;
-    }
-    
-    /**
-     * Extracts model from product title when model field is not available
-     */
-    private String extractModelFromName(String productName) {
-        if (productName == null || productName.isEmpty()) {
-            return null;
-        }
-        
-        String lowerName = productName.toLowerCase();
-        
-        // Look for common model patterns
-        // For DeathAdder, extract "deathadder essential"
-        if (lowerName.contains("deathadder")) {
-            if (lowerName.contains("essential")) {
-                return "deathadder essential";
-            } else if (lowerName.contains("v2")) {
-                return "deathadder v2";
-            } else if (lowerName.contains("v3")) {
-                return "deathadder v3";
-            }
-            return "deathadder";
-        }
-        
-        // For iPhones, extract iPhone model
-        if (lowerName.contains("iphone")) {
-            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("iphone\\s*(\\d+[\\w\\s]*(?:pro|max|mini|plus)?)", java.util.regex.Pattern.CASE_INSENSITIVE);
-            java.util.regex.Matcher matcher = pattern.matcher(lowerName);
-            if (matcher.find()) {
-                return "iphone " + matcher.group(1).trim();
-            }
-            return "iphone";
-        }
-        
-        // For Galaxy phones
-        if (lowerName.contains("galaxy")) {
-            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("galaxy\\s*([\\w\\d\\s]*)", java.util.regex.Pattern.CASE_INSENSITIVE);
-            java.util.regex.Matcher matcher = pattern.matcher(lowerName);
-            if (matcher.find()) {
-                return "galaxy " + matcher.group(1).split("\\s")[0];
-            }
-            return "galaxy";
-        }
-        
-        // Look for alphanumeric model patterns (e.g., "G502", "MX518")
-        java.util.regex.Pattern alphaNumPattern = java.util.regex.Pattern.compile("\\b[A-Z]+\\d+[A-Z]*\\b", java.util.regex.Pattern.CASE_INSENSITIVE);
-        java.util.regex.Matcher alphaNumMatcher = alphaNumPattern.matcher(productName);
-        if (alphaNumMatcher.find()) {
-            return alphaNumMatcher.group().toLowerCase();
-        }
-        
-        return null;
-    }
-    
-    /**
-     * Calculates penalty for product variants (different colors, storage, etc.)
-     * Returns 0.0 for same product, higher values for different variants
-     */
-    private double calculateVariantPenalty(String originalText, String scrapedText) {
-        // Enhanced color variations with more comprehensive detection
-        String[] colors = {"black", "white", "blue", "red", "green", "yellow", "pink", "purple", "gray", "grey",
-                          "gold", "silver", "rose", "graphite", "midnight", "starlight", "space", "coral", "mint",
-                          "sierra", "alpine", "deep", "dark", "light", "bright", "natural"};
-        String originalColor = null;
-        String scrapedColor = null;
-        
-        // More aggressive color detection - match whole words to avoid false positives
-        for (String color : colors) {
-            if (originalText.matches(".*\\b" + color + "\\b.*")) {
-                originalColor = color;
-                break; // Take first match to avoid conflicts
-            }
-        }
-        for (String color : colors) {
-            if (scrapedText.matches(".*\\b" + color + "\\b.*")) {
-                scrapedColor = color;
-                break; // Take first match to avoid conflicts
-            }
-        }
-        
-        // Enhanced storage variations
-        String[] storages = {"16gb", "32gb", "64gb", "128gb", "256gb", "512gb", "1tb", "2tb", "4tb"};
-        String originalStorage = null;
-        String scrapedStorage = null;
-        
-        for (String storage : storages) {
-            if (originalText.contains(storage)) {
-                originalStorage = storage;
-                break; // Take first match
-            }
-        }
-        for (String storage : storages) {
-            if (scrapedText.contains(storage)) {
-                scrapedStorage = storage;
-                break; // Take first match
-            }
-        }
-        
-        // Model variations (Pro vs regular, Mini, Plus, Max)
-        boolean originalIsPro = originalText.contains("pro");
-        boolean scrapedIsPro = scrapedText.contains("pro");
-        boolean originalIsMini = originalText.contains("mini");
-        boolean scrapedIsMini = scrapedText.contains("mini");
-        boolean originalIsPlus = originalText.contains("plus");
-        boolean scrapedIsPlus = scrapedText.contains("plus");
-        boolean originalIsMax = originalText.contains("max");
-        boolean scrapedIsMax = scrapedText.contains("max");
-        
-        double penalty = 0.0;
-        
-        // Heavy penalty for different model variants
-        if (originalIsPro != scrapedIsPro) {
-            penalty += 0.8; // 80% penalty - Pro vs regular is a major difference
-            logger.debug("Model variant penalty: Pro vs regular mismatch");
-        }
-        if (originalIsMini != scrapedIsMini) {
-            penalty += 0.8; // 80% penalty - Mini vs regular is a major difference
-            logger.debug("Model variant penalty: Mini vs regular mismatch");
-        }
-        if (originalIsPlus != scrapedIsPlus) {
-            penalty += 0.8; // 80% penalty - Plus vs regular is a major difference
-            logger.debug("Model variant penalty: Plus vs regular mismatch");
-        }
-        if (originalIsMax != scrapedIsMax) {
-            penalty += 0.8; // 80% penalty - Max vs regular is a major difference
-            logger.debug("Model variant penalty: Max vs regular mismatch");
-        }
-        
-        // High penalty for different colors (customers care about color)
-        if (originalColor != null && scrapedColor != null && !originalColor.equals(scrapedColor)) {
-            penalty += 0.7; // 70% penalty - increased significantly
-            logger.debug("Color variant penalty: {} vs {}", originalColor, scrapedColor);
-        }
-        
-        // High penalty for different storage (major spec difference)
-        if (originalStorage != null && scrapedStorage != null && !originalStorage.equals(scrapedStorage)) {
-            penalty += 0.8; // 80% penalty - increased significantly
-            logger.debug("Storage variant penalty: {} vs {}", originalStorage, scrapedStorage);
-        }
-        
-        // Additional check for condition variations (New vs Renewed/Refurbished)
-        boolean originalIsRenewed = originalText.contains("renewed") || originalText.contains("refurbished") ||
-                                   originalText.contains("used") || originalText.contains("pre-owned");
-        boolean scrapedIsRenewed = scrapedText.contains("renewed") || scrapedText.contains("refurbished") ||
-                                  scrapedText.contains("used") || scrapedText.contains("pre-owned");
-        
-        if (originalIsRenewed != scrapedIsRenewed) {
-            penalty += 0.5; // 50% penalty for condition mismatch
-            logger.debug("Condition variant penalty: Renewed vs New mismatch");
-        }
-        
-        // Cap penalty at 0.95 (95%) to allow for some flexibility but be very strict
-        return Math.min(penalty, 0.95);
-    }
 }

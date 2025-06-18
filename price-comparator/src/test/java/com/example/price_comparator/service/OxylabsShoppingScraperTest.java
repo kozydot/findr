@@ -24,14 +24,17 @@ public class OxylabsShoppingScraperTest {
         }
 
         ReflectionTestUtils.setField(scraper, "username", username);
-        ReflectionTestUtils.setField(scraper, "password", password);
-
-        String query = "GENZY Smart Bakhoor Burner, Portable";
+        ReflectionTestUtils.setField(scraper, "password", password);        String query = "GENZY Smart Bakhoor Burner, Portable";
         String geoLocation = "United Arab Emirates";
         
         logger.info("Starting test for query: '{}' in geo-location: '{}'", query, geoLocation);
         
-        List<ShoppingProduct> products = scraper.scrapeShoppingResults(query, geoLocation, username, password);
+        // Create a progress callback for the test
+        java.util.function.BiConsumer<Integer, String> progressCallback = (progress, message) -> {
+            logger.info("Progress: {}% - {}", progress, message);
+        };
+        
+        List<ShoppingProduct> products = scraper.scrapeShoppingResults(query, geoLocation, username, password, progressCallback);
 
         if (products == null) {
             logger.error("The product list is null. The test cannot proceed.");
