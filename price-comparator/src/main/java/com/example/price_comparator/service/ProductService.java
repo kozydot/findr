@@ -170,9 +170,8 @@ public class ProductService {
                     logger.info("MATCHING COMPLETE - Accepted {} offers after filtering", offers.size());
                     
                     // Log summary if no matches found
-                    if (offers.isEmpty()) {
-                        logger.warn("⚠️  NO MATCHES FOUND - All {} offers were rejected. Consider lowering matching threshold.", shoppingProducts.size());
-                        logger.info("💡 Top rejected scores: Check logs above for specific scores and reasons");
+                    if (offers.isEmpty()) {                        logger.warn("NO MATCHES FOUND - All {} offers were rejected. Consider lowering matching threshold.", shoppingProducts.size());
+                        logger.info("Top rejected scores: Check logs above for specific scores and reasons");
                     }
                     
                     List<RetailerInfo> allOffers = new ArrayList<>();
@@ -192,8 +191,7 @@ public class ProductService {
                             String normalizedUrl = normalizeUrl(offer.getProductUrl());
                             String uniqueKey = normalizedRetailer + "|" + normalizedUrl;
                             
-                            if (seenKeys.contains(uniqueKey)) {
-                                logger.debug("🚫 DUPLICATE DETECTED - Removing duplicate: {} | {}", 
+                            if (seenKeys.contains(uniqueKey)) {                                logger.debug("DUPLICATE DETECTED - Removing duplicate: {} | {}", 
                                     normalizedRetailer, normalizedUrl);
                                 return false;
                             }
@@ -218,8 +216,7 @@ public class ProductService {
                         String retailerName = entry.getKey();
                         java.util.List<RetailerInfo> retailerOffers = entry.getValue();
                         
-                        if (retailerOffers.size() > 1) {
-                            logger.info("🔄 RETAILER DEDUP - {} has {} offers, selecting best price", 
+                        if (retailerOffers.size() > 1) {                            logger.info("RETAILER DEDUP - {} has {} offers, selecting best price", 
                                 retailerName, retailerOffers.size());
                         }
                         
@@ -230,8 +227,7 @@ public class ProductService {
                         
                         bestOffersByRetailer.put(retailerName, bestOffer);
                         
-                        if (retailerOffers.size() > 1) {
-                            logger.info("✅ Selected best offer from {} with price: {}", 
+                        if (retailerOffers.size() > 1) {                            logger.info("Selected best offer from {} with price: {}", 
                                 retailerName, String.format("%.2f", bestOffer.getCurrentPrice()));
                         }
                     }
@@ -250,7 +246,7 @@ public class ProductService {
                             RetailerInfo existing = finalOffers.get(uniqueKey);
                             if (offer.getCurrentPrice() < existing.getCurrentPrice()) {
                                 finalOffers.put(uniqueKey, offer);
-                                logger.info("🔄 URL DEDUP - Replaced existing offer with better price for {}", normalizedRetailer);
+                                logger.info("URL DEDUP - Replaced existing offer with better price for {}", normalizedRetailer);
                             }
                         } else {
                             finalOffers.put(uniqueKey, offer);
@@ -607,7 +603,7 @@ public class ProductService {
         double keyTermScore = calculateKeyTermScore(originalText, scrapedText);
         totalScore += keyTermScore * 0.1;
         maxScore += 0.1;        double finalScore = maxScore > 0 ? totalScore / maxScore : 0.0;
-        boolean matches = finalScore > 0.60; 
+        boolean matches = finalScore > 0.63; 
         
         // Clean structured logging for product matching
         String result = matches ? "ACCEPTED" : "REJECTED";
@@ -624,8 +620,8 @@ public class ProductService {
             logger.info("MATCH ANALYSIS - {} (Score: {}) | {}", 
                 result, 
                 String.format("%.3f", finalScore),
-                matches ? "✅ ACCEPTED" : "❌ REJECTED");
-            logger.info("  📊 Breakdown - Text: {} | Brand: {} | Specs: {} | Terms: {} | Product: {}",
+                matches ? "ACCEPTED" : "REJECTED");
+            logger.info("  Breakdown - Text: {} | Brand: {} | Specs: {} | Terms: {} | Product: {}",
                 String.format("%.3f", jaroWinklerScore),
                 String.format("%.3f", brandScore),
                 String.format("%.3f", specScore),
@@ -1022,7 +1018,7 @@ public class ProductService {
                     fallback = basePart;
                 }
             }
-            logger.debug("🔄 URL Fallback Normalization: {} -> {}",
+            logger.debug("URL Fallback Normalization: {} -> {}",
                 url.length() > 50 ? url.substring(0, 47) + "..." : url,
                 fallback.length() > 50 ? fallback.substring(0, 47) + "..." : fallback);
             return fallback;
@@ -1072,7 +1068,7 @@ public class ProductService {
             java.util.regex.Matcher matcher = pattern.matcher(lowerPath);
             if (matcher.find()) {
                 String asin = matcher.group(1).toUpperCase(); // Normalize to uppercase
-                logger.debug("🏷️  Amazon ASIN extracted: {} from /dp/ pattern", asin);
+                logger.debug("Amazon ASIN extracted: {} from /dp/ pattern", asin);
                 return "/dp/" + asin;
             }
             
@@ -1081,11 +1077,11 @@ public class ProductService {
             java.util.regex.Matcher altMatcher = altPattern.matcher(lowerPath);
             if (altMatcher.find()) {
                 String asin = altMatcher.group(1).toUpperCase(); // Normalize to uppercase
-                logger.debug("🏷️  Amazon ASIN extracted: {} from /gp/product/ pattern", asin);
+                logger.debug("Amazon ASIN extracted: {} from /gp/product/ pattern", asin);
                 return "/dp/" + asin;
             }
             
-            logger.warn("⚠️  Could not extract ASIN from Amazon path: {}",
+            logger.warn("Could not extract ASIN from Amazon path: {}",
                 lowerPath.length() > 50 ? lowerPath.substring(0, 47) + "..." : lowerPath);
         }
         

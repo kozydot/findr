@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Bell, User, Mail, Lock, LogOut, Save, AlertTriangle } from 'lucide-react';
+import { Bell, User, Mail, Lock, LogOut, Save } from 'lucide-react';
 
 const ProfilePage = () => {
   const { user, logout, updateUser } = useAuth();
@@ -303,34 +303,35 @@ const ProfilePage = () => {
             </div>
           )}
         </div>
-      </div>
-      
-      {/* Confirmation modal for logout */}
+      </div>        {/* Confirmation modal for logout */}
       {showConfirmLogout && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <div className="flex items-start mb-4">
-              <AlertTriangle size={24} className="text-warning mr-3 flex-shrink-0" />
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Confirm Logout</h3>
-                <p className="text-gray-600 text-sm">
-                  Are you sure you want to log out of your account?
-                </p>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-gray-700 transform transition-all animate-fade-in">
+            <div className="text-center mb-8">
+              <div className="mx-auto w-16 h-16 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center mb-4">
+                <LogOut size={28} className="text-primary" />
               </div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                Confirm Logout
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                Are you sure you want to log out of your account? You'll need to sign in again to access your profile and saved items.
+              </p>
             </div>
             
-            <div className="flex justify-end space-x-3 mt-6">
+            <div className="flex flex-col sm:flex-row justify-center gap-3">
               <button 
                 onClick={() => setShowConfirmLogout(false)}
-                className="btn bg-gray-100 text-secondary hover:bg-gray-200"
+                className="btn bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 transition-all duration-200 px-6 py-3 min-w-[120px]"
               >
                 Cancel
               </button>
               <button 
                 onClick={confirmLogout}
-                className="btn btn-primary"
+                className="btn bg-primary hover:bg-primary/90 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-3 min-w-[120px] flex items-center justify-center"
               >
-                Yes, Log Out
+                <LogOut size={16} className="mr-2" />
+                Log Out
               </button>
             </div>
           </div>
