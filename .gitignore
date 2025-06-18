@@ -51,10 +51,15 @@ build/
 .roomodes
 docs
 memory-bank/
-price-comparator\DESIGN_DOC.md
+price-comparator/DESIGN_DOC.md
 .VSCodeCounter
 .vite
 firebase-debug.log
 .DS_Store
 Thumbs.db
-price-comparator\src\main\resources\price-comparator-23ac4-firebase-adminsdk-fbsvc-a9eb8ddc35.json
+
+# Firebase service account keys (sensitive)
+**/firebase-service-account-key.json
+**/price-comparator-*-firebase-adminsdk-*.json
+price-comparator/src/main/resources/firebase-service-account-key.json
+price-comparator/src/main/resources/price-comparator-*-firebase-adminsdk-*.json

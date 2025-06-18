@@ -5,14 +5,14 @@ const Footer = () => {
   return (
     <footer className="bg-background-dark text-white py-12 mt-auto">
       <div className="container mx-auto px-4 md:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="col-span-1 md:col-span-2">
             <Link to="/" className="inline-flex items-center space-x-2">
               <span className="text-primary text-xl font-bold">Findr</span>
             </Link>
             <p className="mt-4 text-gray-400 text-sm">
-              Findr helps you find the best deals across UAE's top e-commerce platforms.
-              Compare prices, track price history, and get alerts when prices drop.
+              Findr is an intelligent price comparison platform that automatically finds the best deals across multiple UAE retailers.
+              Using advanced product matching algorithms and real-time price monitoring, we help you save money and time on every purchase.
             </p>
           </div>
           
@@ -23,15 +23,6 @@ const Footer = () => {
               <li><Link to="/search" className="text-gray-400 hover:text-primary transition-colors text-sm">Compare Prices</Link></li>
               <li><Link to="/bookmarks" className="text-gray-400 hover:text-primary transition-colors text-sm">My Bookmarks</Link></li>
               <li><Link to="/login" className="text-gray-400 hover:text-primary transition-colors text-sm">Login</Link></li>
-            </ul>
-          </div>
-          
-          <div>
-            <h4 className="text-white font-medium mb-4">Supported Stores</h4>
-            <ul className="space-y-2">
-              <li><a href="https://www.amazon.ae" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary transition-colors text-sm">Amazon.ae</a></li>
-              <li><a href="https://www.noon.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary transition-colors text-sm">Noon.com</a></li>
-              <li><a href="https://www.luluhypermarket.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary transition-colors text-sm">Lulu Hypermarket</a></li>
             </ul>
           </div>
         </div>

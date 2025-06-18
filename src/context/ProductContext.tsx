@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
+import { ref, onValue } from 'firebase/database';
+import { db } from '../../firebase';
 import { Product } from '../types';
 
 interface ProductContextType {
@@ -19,36 +21,59 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch('/api/v1/products');
-        if (!response.ok) {
-          throw new Error('Failed to fetch products');
+    const fetchProducts = () => {
+      const productsRef = ref(db, 'products');
+      
+      const unsubscribe = onValue(productsRef, (snapshot) => {
+        try {
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            const productArray: Product[] = Object.keys(data).map(key => ({
+              id: key,
+              ...data[key]
+            }));
+            
+            setProducts(productArray);
+            
+            // Filter for popular Amazon products and sort by reviews (popularity)
+            const amazonProducts = productArray.filter(product => 
+              product.retailers?.some(retailer => 
+                retailer.name?.toLowerCase().includes('amazon')
+              )
+            );
+            
+            // Sort by review count (descending) to get most popular products
+            const popularProducts = amazonProducts
+              .sort((a, b) => (b.reviews || 0) - (a.reviews || 0))
+              .slice(0, 6); // Show top 6 most popular
+            
+            setFeaturedProducts(popularProducts);
+          } else {
+            setProducts([]);
+            setFeaturedProducts([]);
+          }
+          setError(null);
+        } catch (err: any) {
+          setError(err.message || 'Failed to fetch products');
+        } finally {
+          setLoading(false);
         }
-        const data = await response.json();
-        setProducts(data);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
+      }, (error) => {
+        setError(error.message || 'Failed to fetch products');
         setLoading(false);
-      }
+      });
+      
+      return unsubscribe;
     };
 
-    const fetchFeaturedProducts = async () => {
-      try {
-        const response = await fetch('/api/v1/products/featured');
-        if (!response.ok) {
-          throw new Error('Failed to fetch featured products');
-        }
-        const data = await response.json();
-        setFeaturedProducts(data);
-      } catch (err: any) {
-        setError(err.message);
+    const unsubscribe = fetchProducts();
+    
+    // Cleanup subscription on unmount
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
       }
     };
-
-    fetchProducts();
-    fetchFeaturedProducts();
   }, []);
   
   const getProductById = useCallback((id: string): Product | undefined => {

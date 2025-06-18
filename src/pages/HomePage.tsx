@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, TrendingUp, ShieldCheck, Zap } from 'lucide-react';
+import { ArrowRight, Search, Zap, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import SearchBar from '../components/SearchBar';
@@ -13,27 +13,11 @@ const HomePage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { featuredProducts, loading, error } = useProducts();
   const { isAuthenticated } = useAuth();
-  const [categories, setCategories] = useState<string[]>([]);
   
   // Intersection observer hooks for animation
   const [heroRef, heroInView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const [featuredRef, featuredInView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const [benefitsRef, benefitsInView] = useInView({ triggerOnce: true, threshold: 0.1 });
-  const [categoriesRef, categoriesInView] = useInView({ triggerOnce: true, threshold: 0.1 });
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch('/api/v1/products/categories');
-        const data = await response.json();
-        setCategories(data);
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-      }
-    };
-
-    fetchCategories();
-  }, []);
   
   // Handle search
   const handleSearch = (e: React.FormEvent) => {
@@ -64,19 +48,19 @@ const HomePage = () => {
   
   const benefitItems = [
     {
-      icon: <TrendingUp size={24} className="text-primary" />,
-      title: "Real-time Price Tracking",
-      description: "Monitor prices across major UAE retailers including Amazon.ae, Noon.com, and LuLu Hypermarket."
-    },
-    {
-      icon: <ShieldCheck size={24} className="text-primary" />,
-      title: "Price Drop Alerts",
-      description: "Get notified instantly when prices drop below your target, ensuring you never miss a deal."
+      icon: <Search size={24} className="text-primary" />,
+      title: "Advanced Product Matching",
+      description: "Sophisticated algorithms analyze product specifications, brands, and key features to accurately match identical products across different retailers."
     },
     {
       icon: <Zap size={24} className="text-primary" />,
-      title: "Price History Charts",
-      description: "View historical price data to make informed purchasing decisions and identify trends."
+      title: "Real-time Shopping Search",
+      description: "Instantly discover the best prices across multiple UAE retailers with our automated shopping comparison engine."
+    },
+    {
+      icon: <Globe size={24} className="text-primary" />,
+      title: "Multi-Retailer Coverage",
+      description: "Comprehensive price comparison across major UAE online retailers, giving you access to the widest selection of deals and offers."
     }
   ];
   
@@ -107,8 +91,7 @@ const HomePage = () => {
             >
               Compare prices, track price history, and get alerts when prices drop on your favorite products.
             </motion.p>
-            
-            <motion.div variants={itemVariants}>
+              <motion.div variants={itemVariants}>
               <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
                 <div className="relative">
                   <input
@@ -126,13 +109,6 @@ const HomePage = () => {
                   </button>
                 </div>
               </form>
-            </motion.div>
-            
-            <motion.div 
-              className="mt-6 text-white/80 text-sm"
-              variants={itemVariants}
-            >
-              Popular searches: iPhone, Samsung TV, PlayStation 5, Air Fryer
             </motion.div>
           </motion.div>
         </div>
@@ -162,22 +138,21 @@ const HomePage = () => {
             animate={featuredInView ? "visible" : "hidden"}
             variants={containerVariants}
           >
-            <motion.h2 
+            <motion.h2
               className="text-3xl font-bold text-secondary mb-4"
               variants={itemVariants}
             >
-              Best Deals Today
+              Popular Amazon Products
             </motion.h2>
-            <motion.p 
+            <motion.p
               className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto"
               variants={itemVariants}
             >
-              We've found the best price drops and deals across UAE's top online retailers.
+              Discover the most popular and trending products on Amazon.ae with competitive pricing.
             </motion.p>
           </motion.div>
-          
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch"
             initial="hidden"
             animate={featuredInView ? "visible" : "hidden"}
             variants={containerVariants}
@@ -188,7 +163,7 @@ const HomePage = () => {
               <motion.div
                 key={product.id}
                 variants={itemVariants}
-                className="animate-fadeIn"
+                className="animate-fadeIn h-full"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <ProductCard product={product} />
@@ -207,58 +182,13 @@ const HomePage = () => {
               onClick={() => navigate('/search')}
               variants={itemVariants}
             >
-              View More Deals
+              View More Products
               <ArrowRight size={16} className="ml-2" />
             </motion.button>
           </motion.div>
         </div>
       </section>
       
-      {/* Categories Section */}
-      <section 
-        ref={categoriesRef}
-        className="py-16 bg-gray-50 dark:bg-gray-900"
-      >
-        <div className="container mx-auto px-4 md:px-6">
-          <motion.div
-            className="text-center mb-12"
-            initial="hidden"
-            animate={categoriesInView ? "visible" : "hidden"}
-            variants={containerVariants}
-          >
-            <motion.h2 
-              className="text-3xl font-bold text-secondary mb-4"
-              variants={itemVariants}
-            >
-              Shop by Category
-            </motion.h2>
-            <motion.p 
-              className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto"
-              variants={itemVariants}
-            >
-              Browse our most popular categories.
-            </motion.p>
-          </motion.div>
-          
-          <motion.div 
-            className="grid grid-cols-2 md:grid-cols-4 gap-4"
-            initial="hidden"
-            animate={categoriesInView ? "visible" : "hidden"}
-            variants={containerVariants}
-          >
-            {categories.map((category, index) => (
-              <motion.div 
-                key={index}
-                className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-md transition-all text-center cursor-pointer"
-                variants={itemVariants}
-                onClick={() => navigate(`/search?q=${encodeURIComponent(category)}`)}
-              >
-                <h3 className="text-xl font-semibold">{category}</h3>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
 
       {/* Benefits Section */}
       <section 
@@ -272,17 +202,17 @@ const HomePage = () => {
             animate={benefitsInView ? "visible" : "hidden"}
             variants={containerVariants}
           >
-            <motion.h2 
+            <motion.h2
               className="text-3xl font-bold text-secondary mb-4"
               variants={itemVariants}
             >
-              Why Choose Findr
+              Advanced Price Intelligence
             </motion.h2>
-            <motion.p 
+            <motion.p
               className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto"
               variants={itemVariants}
             >
-              We help you save time and money by finding the best prices across UAE's top online retailers.
+              Experience next-generation price comparison powered by intelligent algorithms that automatically find, match, and compare products across UAE retailers.
             </motion.p>
           </motion.div>
           

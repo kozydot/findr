@@ -32,6 +32,9 @@ build/
 ### VS Code ###
 .vscode/
 
-# Firebase
+# Firebase service account keys (sensitive)
 firebase-service-account-key.json
 src/main/resources/firebase-service-account-key.json
+src/main/resources/price-comparator-*-firebase-adminsdk-*.json
+**/firebase-service-account-key.json
+**/price-comparator-*-firebase-adminsdk-*.json

@@ -1,7 +1,6 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Star, ArrowDown, ArrowUp, Bookmark } from 'lucide-react';
-import { Product, Retailer } from '../types';
+import { ChevronRight, Star } from 'lucide-react';
+import { Product } from '../types';
 import { useAuth } from '../context/AuthContext';
 import BookmarkButton from './BookmarkButton';
 
@@ -22,7 +21,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   
   
   return (
-    <div className="card group">
+    <div className="card group h-full flex flex-col">
       {/* Image and alert button */}
       <div className="relative overflow-hidden">
         <Link to={`/product/${product.id}`}>
@@ -41,7 +40,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
       </div>
       
       {/* Content */}
-      <div className="p-4">
+      <div className="p-4 flex-1 flex flex-col">
         <Link to={`/product/${product.id}`}>
           <h3 className="font-medium text-lg line-clamp-2 mb-2 hover:text-primary transition-colors">
             {product.name}
@@ -64,7 +63,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </div>
         
         {/* Best price section */}
-        <div className="mb-4" style={{ minHeight: '52px' }}>
+        <div className="mb-4 flex-1" style={{ minHeight: '52px' }}>
         {isFinite(lowestPrice) ? (
           bestRetailer ? (
             <>
@@ -99,13 +98,15 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </div>
         
         {/* View details link */}
-        <Link 
-          to={`/product/${product.id}`}
-          className="mt-4 inline-flex items-center text-sm font-medium text-primary hover:underline"
-        >
-          View full comparison
-          <ChevronRight size={16} className="ml-1" />
-        </Link>
+        <div className="mt-auto">
+          <Link 
+            to={`/product/${product.id}`}
+            className="inline-flex items-center text-sm font-medium text-primary hover:underline"
+          >
+            View full comparison
+            <ChevronRight size={16} className="ml-1" />
+          </Link>
+        </div>
       </div>
     </div>
   );
