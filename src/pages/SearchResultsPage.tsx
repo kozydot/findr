@@ -7,7 +7,7 @@ import {
 import ProductCard from '../components/ProductCard';
 import { Product } from '../types';
 
-type SortOption = 'price_asc' | 'price_desc' | 'rating' | 'popularity';
+type SortOption = 'price_asc' | 'price_desc' | 'rating' | 'popularity' | 'relevance';
 type ViewMode = 'grid' | 'list';
 
 const SearchResultsPage = () => {
@@ -18,7 +18,7 @@ const SearchResultsPage = () => {
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState<string | null>(null);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [sortBy, setSortBy] = useState<SortOption>('price_asc');
+  const [sortBy, setSortBy] = useState<SortOption>(query ? 'relevance' : 'price_asc'); // Use relevance for search
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   
@@ -34,6 +34,15 @@ const SearchResultsPage = () => {
       )
     )];
   }, [allProducts]);
+
+  // Reset sort to relevance when search query changes
+  useEffect(() => {
+    if (query) {
+      setSortBy('relevance');
+    } else {
+      setSortBy('price_asc');
+    }
+  }, [query]);
 
   useEffect(() => {
     const fetchSearchResults = async () => {
@@ -87,8 +96,10 @@ const SearchResultsPage = () => {
         return getMinPrice(b) - getMinPrice(a);
       } else if (sortOption === 'rating') {
         return b.rating - a.rating;
-      } else { // popularity
+      } else if (sortOption === 'popularity') {
         return b.reviews - a.reviews;
+      } else { // relevance - maintain backend order
+        return 0; // Don't re-sort, backend already sorted by relevance
       }
     });
   }, []);
@@ -217,6 +228,7 @@ const SearchResultsPage = () => {
                   onChange={(e) => setSortBy(e.target.value as SortOption)}
                   className="appearance-none bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-2 pr-8 text-sm font-medium focus:outline-none"
                 >
+                  {query && <option value="relevance">Relevance</option>}
                   <option value="price_asc">Price: Low to High</option>
                   <option value="price_desc">Price: High to Low</option>
                   <option value="rating">Rating</option>

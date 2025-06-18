@@ -318,21 +318,39 @@ public class ProductService {
         searchResults.forEach(this::saveProduct);
         return searchResults;
     }
-    
-    /**
+      /**
      * Enhanced search algorithm that filters and ranks products by relevance
      */
     private List<ProductDocument> filterAndRankByRelevance(List<ProductDocument> products, String query) {
         String normalizedQuery = query.toLowerCase().trim();
         String[] queryTerms = normalizedQuery.split("\\s+");
         
-        return products.stream()
+        List<ProductWithScore> scoredProducts = products.stream()
             .map(product -> {
                 double relevanceScore = calculateRelevanceScore(product, normalizedQuery, queryTerms);
                 return new ProductWithScore(product, relevanceScore);
             })
-            .filter(pws -> pws.score >= 0.3) // Filter out products with very low relevance
+            .filter(pws -> pws.score >= 1.0) // Increased threshold from 0.3 to 1.0 for better filtering
             .sorted((a, b) -> Double.compare(b.score, a.score)) // Sort by relevance score descending
+            .collect(Collectors.toList());
+        
+        // Log scoring information for debugging
+        logger.info("RELEVANCE SCORING RESULTS:");
+        logger.info("  Input products: {}", products.size());
+        logger.info("  Products above threshold (1.0): {}", scoredProducts.size());
+        
+        if (scoredProducts.size() > 0) {
+            int logCount = Math.min(5, scoredProducts.size());
+            logger.info("  Top {} scored products:", logCount);
+            for (int i = 0; i < logCount; i++) {
+                ProductWithScore pws = scoredProducts.get(i);
+                String shortName = pws.product.getName().length() > 50 ? 
+                    pws.product.getName().substring(0, 47) + "..." : pws.product.getName();
+                logger.info("    {}. Score: {} - {}", i + 1, String.format("%.2f", pws.score), shortName);
+            }
+        }
+        
+        return scoredProducts.stream()
             .limit(50) // Limit results to top 50 most relevant
             .map(pws -> pws.product)
             .collect(Collectors.toList());
@@ -341,8 +359,7 @@ public class ProductService {
     /**
      * Calculate relevance score for a product based on query terms
      */
-    private double calculateRelevanceScore(ProductDocument product, String normalizedQuery, String[] queryTerms) {
-        String productName = product.getName().toLowerCase();
+    private double calculateRelevanceScore(ProductDocument product, String normalizedQuery, String[] queryTerms) {        String productName = product.getName().toLowerCase();
         String productDescription = product.getDescription() != null ? product.getDescription().toLowerCase() : "";
         String productBrand = product.getBrand() != null ? product.getBrand().toLowerCase() : "";
         
@@ -351,15 +368,22 @@ public class ProductService {
         // 1. Exact query match in product name (highest weight)
         if (productName.contains(normalizedQuery)) {
             if (productName.startsWith(normalizedQuery)) {
-                score += 10.0; // Product name starts with query
+                score += 15.0; // Product name starts with query - increased
             } else if (isMainProduct(productName, normalizedQuery)) {
-                score += 8.0; // Query appears as main product (not accessory)
+                score += 12.0; // Query appears as main product (not accessory) - increased
             } else {
-                score += 3.0; // Query appears somewhere in name
+                score += 5.0; // Query appears somewhere in name - increased
             }
         }
         
-        // 2. Individual term matching with position weighting
+        // 2. Main product vs accessory detection (crucial for iPhone search)
+        if (isMainCategoryProduct(productName, normalizedQuery)) {
+            score += 10.0; // Boost main category products significantly
+        } else if (isAccessoryProduct(productName, productDescription)) {
+            score -= 8.0; // Penalize accessories heavily
+        }
+        
+        // 3. Individual term matching with position weighting
         for (String term : queryTerms) {
             if (term.length() < 2) continue; // Skip very short terms
             
@@ -386,19 +410,20 @@ public class ProductService {
             }
         }
         
-        // 3. Penalize accessory-like products
-        if (isAccessoryProduct(productName, productDescription)) {
-            score *= 0.3; // Heavily penalize accessories
+        // 4. Additional penalties for non-relevant products
+        if (productName.length() > 100) {
+            score -= 3.0; // Penalty for overly long names (often accessories)
         }
         
-        // 4. Boost main category products
-        if (isMainCategoryProduct(productName, normalizedQuery)) {
-            score *= 1.5;
+        String[] productWords = productName.split("\\W+");
+        if (productWords.length > 15) {
+            score -= 2.0; // Penalty for products with many words
         }
         
-        // 5. Normalize score based on query length and product name length
-        double lengthFactor = Math.min(1.0, (double) normalizedQuery.length() / productName.length());
-        score *= (0.5 + 0.5 * lengthFactor);
+        // 5. Boost for high-rated products (slight preference)
+        if (product.getRating() > 4.0) {
+            score += 1.0;
+        }
         
         return Math.max(0.0, score);
     }
@@ -425,8 +450,7 @@ public class ProductService {
         }
         return false;
     }
-    
-    /**
+      /**
      * Check if product is likely an accessory or peripheral item
      */
     private boolean isAccessoryProduct(String productName, String description) {
@@ -437,15 +461,35 @@ public class ProductService {
             "headphones", "earphones", "speaker", "bluetooth", "airpods case",
             "repair tool", "screwdriver", "kit", "tool set", "cleaning", "cleaner",
             "stylus", "pen", "grip", "ring holder", "car mount", "dashboard",
-            "lens", "filter", "tripod", "selfie stick", "gimbal", "stabilizer"
+            "lens", "filter", "tripod", "selfie stick", "gimbal", "stabilizer",
+            "converter", "splitter", "hub", "extension", "extender", "organizer",
+            "protector", "wallet", "folio", "sleeve", "pouch", "bag", "carrying",
+            "magnetic", "magsafe", "wireless pad", "charging pad", "charging station",
+            "car adapter", "cigarette lighter", "retractable", "flexible shaft",
+            "extension rod", "precision", "electronics repair", "magnetic", "bits",
+            "female to", "male adapter", "type c", "converter", "plug", "power",
+            "in one", "4 in one", "multi", "combo", "set of", "pack of", "pcs",
+            "pieces", "replacement", "spare", "backup", "extra"
         };
         
         String combinedText = (productName + " " + description).toLowerCase();
         
+        // Check for accessory keywords
         for (String keyword : accessoryKeywords) {
             if (combinedText.contains(keyword)) {
                 return true;
             }
+        }
+        
+        // Additional patterns for accessories
+        if (combinedText.matches(".*\\d+\\s*(pcs?|pieces?).*") ||  // "2 pcs", "5 pieces"
+            combinedText.matches(".*\\d+\\s*in\\s*one.*") ||       // "4 in one"
+            combinedText.matches(".*set\\s+of\\s+\\d+.*") ||       // "set of 10"
+            combinedText.contains("compatible with") ||
+            combinedText.contains("for iphone") ||
+            combinedText.contains("for apple") ||
+            combinedText.contains("for samsung")) {
+            return true;
         }
         
         return false;
