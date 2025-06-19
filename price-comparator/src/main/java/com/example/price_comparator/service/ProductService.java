@@ -34,7 +34,6 @@ public class ProductService {
     private final AmazonApiService amazonApiService;
     private final ShoppingService shoppingService;
     private final SimpMessagingTemplate messagingTemplate;
-    private final ImageHashingService imageHashingService;
 
     @Value("${oxylabs.username}")
     private String username;
@@ -42,13 +41,11 @@ public class ProductService {
     @Value("${oxylabs.password}")
     private String password;    @Autowired
     public ProductService(FirebaseService firebaseService, AmazonApiService amazonApiService, 
-                         ShoppingService shoppingService, SimpMessagingTemplate messagingTemplate,
-                         ImageHashingService imageHashingService) {
+                         ShoppingService shoppingService, SimpMessagingTemplate messagingTemplate) {
         this.firebaseService = firebaseService;
         this.amazonApiService = amazonApiService;
         this.shoppingService = shoppingService;
         this.messagingTemplate = messagingTemplate;
-        this.imageHashingService = imageHashingService;
     }
 
     public List<ProductDocument> getFeaturedProducts(int limit) {
@@ -1214,7 +1211,7 @@ public class ProductService {
         });
     }    /**
      * Calculate image similarity score between original and scraped product
-     * Uses enhanced perceptual hashing with multiple algorithms for visual comparison
+     * Simplified version - only compares image URLs
      */
     private double calculateImageSimilarityScore(ProductDocument originalProduct, ShoppingProduct scrapedProduct) {
         try {
@@ -1227,160 +1224,122 @@ public class ProductService {
                 logger.debug("Image comparison skipped - missing image URLs (original: {}, scraped: {})", 
                     originalImageUrl != null ? "present" : "null", 
                     scrapedImageUrl != null ? "present" : "null");
-                return 0.3; // Lower neutral score when images not available (was 0.5)
+                return 0.3; // Lower neutral score when images not available
             }
             
-            // Check for exact image URLs first (fastest check)
+            // Check for exact image URLs (only reliable comparison without image hashing)
             if (originalImageUrl.equals(scrapedImageUrl)) {
                 logger.debug("Image exact URL match found");
                 return 1.0;
             }
             
-            // Use enhanced multi-algorithm similarity calculation
-            double advancedSimilarity = imageHashingService.calculateAdvancedSimilarity(originalImageUrl, scrapedImageUrl);
+            // Check for similar image URLs (same domain, similar path)
+            double urlSimilarity = calculateImageUrlSimilarity(originalImageUrl, scrapedImageUrl);
             
-            if (advancedSimilarity > 0.8) {
-                logger.debug("High image similarity detected: {} for URLs: {} vs {}", 
-                    String.format("%.3f", advancedSimilarity),
-                    originalImageUrl.length() > 50 ? originalImageUrl.substring(0, 47) + "..." : originalImageUrl,
-                    scrapedImageUrl.length() > 50 ? scrapedImageUrl.substring(0, 47) + "..." : scrapedImageUrl);
-            }
-            
-            // Fallback to individual hash comparison if advanced fails
-            if (advancedSimilarity < 0.1) {
-                logger.debug("Advanced similarity too low ({}), trying fallback hash comparison", 
-                    String.format("%.3f", advancedSimilarity));
-                
-                // Generate or retrieve image hashes for fallback comparison
-                String originalPerceptualHash = getOrGeneratePerceptualHash(originalProduct, originalImageUrl);
-                String scrapedPerceptualHash = getOrGeneratePerceptualHash(scrapedProduct, scrapedImageUrl);
-                
-                if (originalPerceptualHash != null && scrapedPerceptualHash != null) {
-                    double hashSimilarity = imageHashingService.calculateSimilarity(originalPerceptualHash, scrapedPerceptualHash);
-                    advancedSimilarity = Math.max(advancedSimilarity, hashSimilarity);
-                    logger.debug("Fallback hash similarity: {}", String.format("%.3f", hashSimilarity));
-                } else {
-                    // If hashing fails, check MD5 hashes for exact image content match
-                    String originalMD5 = getOrGenerateMD5Hash(originalProduct, originalImageUrl);
-                    String scrapedMD5 = getOrGenerateMD5Hash(scrapedProduct, scrapedImageUrl);
-                    
-                    if (originalMD5 != null && scrapedMD5 != null && originalMD5.equals(scrapedMD5)) {
-                        logger.debug("Image MD5 hash exact match found");
-                        return 1.0;
-                    }
-                    
-                    logger.debug("Image processing failed - using default score (original hash: {}, scraped hash: {})",
-                        originalPerceptualHash != null ? "present" : "null",
-                        scrapedPerceptualHash != null ? "present" : "null");
-                    return 0.3; // Default score if hashing fails (was 0.5)
-                }
-            }
-            
-            logger.debug("Final image similarity score: {} for original: {} vs scraped: {}", 
-                String.format("%.3f", advancedSimilarity), 
+            logger.debug("Image URL similarity score: {} for original: {} vs scraped: {}", 
+                String.format("%.3f", urlSimilarity), 
                 originalImageUrl.length() > 50 ? originalImageUrl.substring(0, 47) + "..." : originalImageUrl,
                 scrapedImageUrl.length() > 50 ? scrapedImageUrl.substring(0, 47) + "..." : scrapedImageUrl);
             
-            return advancedSimilarity;
+            return urlSimilarity;
             
         } catch (Exception e) {
-            logger.debug("Error calculating enhanced image similarity: {} - using default score", e.getMessage());
-            return 0.3; // Default score on error (was 0.5)
+            logger.debug("Error calculating image similarity: {} - using default score", e.getMessage());
+            return 0.3; // Default score on error
         }
     }
     
     /**
-     * Get or generate perceptual hash for a product image
+     * Calculate similarity between image URLs based on domain and path structure
      */
-    private String getOrGeneratePerceptualHash(ProductDocument product, String imageUrl) {
-        if (product.getImagePerceptualHash() != null) {
-            return product.getImagePerceptualHash();
-        }
-        
+    private double calculateImageUrlSimilarity(String url1, String url2) {
         try {
-            CompletableFuture<String> hashFuture = imageHashingService.generatePerceptualHash(imageUrl);
-            String hash = hashFuture.get(10, java.util.concurrent.TimeUnit.SECONDS);
-            
-            if (hash != null) {
-                product.setImagePerceptualHash(hash);
-                // Optionally update in database asynchronously
-                updateProductHashAsync(product);
+            if (url1.equals(url2)) {
+                return 1.0;
             }
             
-            return hash;
-        } catch (Exception e) {
-            logger.debug("Failed to generate perceptual hash for image: {} - {}", imageUrl, e.getMessage());
-            return null;
-        }
-    }
-    
-    /**
-     * Get or generate perceptual hash for a scraped product image
-     */
-    private String getOrGeneratePerceptualHash(ShoppingProduct product, String imageUrl) {
-        if (product.getImagePerceptualHash() != null) {
-            return product.getImagePerceptualHash();
-        }
-        
-        try {
-            CompletableFuture<String> hashFuture = imageHashingService.generatePerceptualHash(imageUrl);
-            String hash = hashFuture.get(10, java.util.concurrent.TimeUnit.SECONDS);
+            // Extract domain and path components
+            String domain1 = extractDomain(url1);
+            String domain2 = extractDomain(url2);
+            String path1 = extractPath(url1);
+            String path2 = extractPath(url2);
             
-            if (hash != null) {
-                product.setImagePerceptualHash(hash);
+            // Same domain gives base similarity
+            if (domain1.equals(domain2)) {
+                // Check path similarity for images from same domain
+                double pathSimilarity = calculateStringSimilarity(path1, path2);
+                return Math.min(0.8, 0.5 + (pathSimilarity * 0.3)); // Max 0.8 for URL similarity
             }
             
-            return hash;
+            // Different domains - very low similarity
+            return 0.1;
+            
         } catch (Exception e) {
-            logger.debug("Failed to generate perceptual hash for scraped image: {} - {}", imageUrl, e.getMessage());
-            return null;
+            logger.debug("Error calculating URL similarity: {}", e.getMessage());
+            return 0.1;
         }
     }
     
     /**
-     * Get or generate MD5 hash for exact image matching
+     * Extract domain from URL
      */
-    private String getOrGenerateMD5Hash(ProductDocument product, String imageUrl) {
-        if (product.getImageMD5Hash() != null) {
-            return product.getImageMD5Hash();
-        }
-        
-        String hash = imageHashingService.generateMD5Hash(imageUrl);
-        if (hash != null) {
-            product.setImageMD5Hash(hash);
-            updateProductHashAsync(product);
-        }
-        
-        return hash;
-    }
-    
-    /**
-     * Get or generate MD5 hash for scraped product
-     */
-    private String getOrGenerateMD5Hash(ShoppingProduct product, String imageUrl) {
-        if (product.getImageMD5Hash() != null) {
-            return product.getImageMD5Hash();
-        }
-        
-        String hash = imageHashingService.generateMD5Hash(imageUrl);
-        if (hash != null) {
-            product.setImageMD5Hash(hash);
-        }
-        
-        return hash;
-    }
-      /**
-     * Asynchronously update product hash in database
-     */
-    @Async
-    private void updateProductHashAsync(ProductDocument product) {
+    private String extractDomain(String url) {
         try {
-            firebaseService.saveProduct(product);
+            if (url.startsWith("http")) {
+                int domainStart = url.indexOf("://") + 3;
+                int domainEnd = url.indexOf("/", domainStart);
+                if (domainEnd == -1) domainEnd = url.length();
+                return url.substring(domainStart, domainEnd).toLowerCase();
+            }
+            return "";
         } catch (Exception e) {
-            logger.debug("Failed to update product hash in database: {}", e.getMessage());
+            return "";
         }
     }
     
+    /**
+     * Extract path from URL
+     */
+    private String extractPath(String url) {
+        try {
+            if (url.startsWith("http")) {
+                int domainStart = url.indexOf("://") + 3;
+                int pathStart = url.indexOf("/", domainStart);
+                if (pathStart != -1) {
+                    return url.substring(pathStart).toLowerCase();
+                }
+            }
+            return "";
+        } catch (Exception e) {
+            return "";
+        }
+    }
+    
+    /**
+     * Calculate simple string similarity using Jaccard index
+     */
+    private double calculateStringSimilarity(String str1, String str2) {
+        try {
+            if (str1 == null || str2 == null) return 0.0;
+            if (str1.equals(str2)) return 1.0;
+            
+            // Convert to sets of characters for Jaccard similarity
+            Set<Character> set1 = str1.chars().mapToObj(c -> (char) c).collect(Collectors.toSet());
+            Set<Character> set2 = str2.chars().mapToObj(c -> (char) c).collect(Collectors.toSet());
+            
+            Set<Character> intersection = new HashSet<>(set1);
+            intersection.retainAll(set2);
+            
+            Set<Character> union = new HashSet<>(set1);
+            union.addAll(set2);
+            
+            return union.isEmpty() ? 0.0 : (double) intersection.size() / union.size();
+            
+        } catch (Exception e) {
+            logger.debug("Error calculating string similarity: {}", e.getMessage());
+            return 0.0;
+        }
+    }    
     /**
      * Normalizes retailer names to handle variations
      */
