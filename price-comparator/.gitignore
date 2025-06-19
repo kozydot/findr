@@ -38,3 +38,4 @@ src/main/resources/firebase-service-account-key.json
 src/main/resources/price-comparator-*-firebase-adminsdk-*.json
 **/firebase-service-account-key.json
 **/price-comparator-*-firebase-adminsdk-*.json
+ENHANCED_DUAL_ENDPOINT_SUMMARY.md

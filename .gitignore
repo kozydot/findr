@@ -57,6 +57,10 @@ price-comparator/DESIGN_DOC.md
 firebase-debug.log
 .DS_Store
 Thumbs.db
+ENHANCED_DUAL_ENDPOINT_SUMMARY.md
+ENHANCED_SCRAPER_SUMMARY.md
+FAST_ENHANCEMENT_OPTIMIZATION.md
+oxylabs-docs
 
 # Firebase service account keys (sensitive)
 **/firebase-service-account-key.json

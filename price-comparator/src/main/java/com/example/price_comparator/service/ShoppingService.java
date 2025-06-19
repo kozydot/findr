@@ -18,12 +18,32 @@ public class ShoppingService {
     private static final String GEO_LOCATION = "United Arab Emirates";
 
     @Autowired
-    private OxylabsShoppingScraper oxylabsShoppingScraper;
-
-    public List<ShoppingProduct> findOffers(ProductDocument product, String username, String password, BiConsumer<Integer, String> progressCallback) {
+    private OxylabsShoppingScraper oxylabsShoppingScraper;    public List<ShoppingProduct> findOffers(ProductDocument product, String username, String password, BiConsumer<Integer, String> progressCallback) {
         String searchQuery = buildSearchQuery(product);
         logger.info("Searching with targeted query: '{}'", searchQuery);
         return oxylabsShoppingScraper.scrapeShoppingResults(searchQuery, GEO_LOCATION, username, password, progressCallback);
+    }
+
+    /**
+     * Find offers using enhanced scraping with detailed product specifications
+     * This provides more accurate matching by fetching detailed specs for top products
+     */
+    public List<ShoppingProduct> findOffersEnhanced(ProductDocument product, String username, String password, BiConsumer<Integer, String> progressCallback) {
+        String searchQuery = buildSearchQuery(product);
+        logger.info("Searching with enhanced targeted query: '{}'", searchQuery);
+        try {
+            if (progressCallback != null) {
+                progressCallback.accept(20, "Starting enhanced scraping with detailed specifications...");
+            }
+            return oxylabsShoppingScraper.scrapeShoppingResultsEnhanced(searchQuery, GEO_LOCATION, username, password);
+        } catch (Exception e) {
+            logger.error("Enhanced scraping failed, falling back to standard scraping: {}", e.getMessage());
+            if (progressCallback != null) {
+                progressCallback.accept(30, "Enhanced scraping failed, using standard method...");
+            }
+            // Fallback to standard scraping
+            return oxylabsShoppingScraper.scrapeShoppingResults(searchQuery, GEO_LOCATION, username, password, progressCallback);
+        }
     }
 
     private String buildSearchQuery(ProductDocument product) {

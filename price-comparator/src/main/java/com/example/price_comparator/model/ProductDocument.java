@@ -14,9 +14,10 @@ public class ProductDocument {
     private String description;
     private String model;
     private String storage;
-    private String ram;
-    private String color;
+    private String ram;    private String color;
     private String imageUrl;
+    private String imagePerceptualHash;  // Perceptual hash for visual similarity
+    private String imageMD5Hash;         // MD5 hash for exact image matching
     private double rating;
     private int reviews;
     @JsonProperty("price")
@@ -103,10 +104,24 @@ public class ProductDocument {
 
     public String getImageUrl() {
         return imageUrl;
+    }    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
+    public String getImagePerceptualHash() {
+        return imagePerceptualHash;
+    }
+
+    public void setImagePerceptualHash(String imagePerceptualHash) {
+        this.imagePerceptualHash = imagePerceptualHash;
+    }
+
+    public String getImageMD5Hash() {
+        return imageMD5Hash;
+    }
+
+    public void setImageMD5Hash(String imageMD5Hash) {
+        this.imageMD5Hash = imageMD5Hash;
     }
 
     public double getRating() {

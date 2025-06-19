@@ -30,24 +30,25 @@ public class ProductService {
     private static final Logger logger = LoggerFactory.getLogger(ProductService.class);
 
     private final Set<String> comparisonInProgress = ConcurrentHashMap.newKeySet();
-    private final ConcurrentHashMap<String, CompletableFuture<ProductDocument>> comparisonResults = new ConcurrentHashMap<>();
-    private final FirebaseService firebaseService;
+    private final ConcurrentHashMap<String, CompletableFuture<ProductDocument>> comparisonResults = new ConcurrentHashMap<>();    private final FirebaseService firebaseService;
     private final AmazonApiService amazonApiService;
     private final ShoppingService shoppingService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ImageHashingService imageHashingService;
 
     @Value("${oxylabs.username}")
     private String username;
 
     @Value("${oxylabs.password}")
-    private String password;
-
-    @Autowired
-    public ProductService(FirebaseService firebaseService, AmazonApiService amazonApiService, ShoppingService shoppingService, SimpMessagingTemplate messagingTemplate) {
+    private String password;    @Autowired
+    public ProductService(FirebaseService firebaseService, AmazonApiService amazonApiService, 
+                         ShoppingService shoppingService, SimpMessagingTemplate messagingTemplate,
+                         ImageHashingService imageHashingService) {
         this.firebaseService = firebaseService;
         this.amazonApiService = amazonApiService;
         this.shoppingService = shoppingService;
         this.messagingTemplate = messagingTemplate;
+        this.imageHashingService = imageHashingService;
     }
 
     public List<ProductDocument> getFeaturedProducts(int limit) {
@@ -153,7 +154,8 @@ public class ProductService {
                     messagingTemplate.convertAndSend(progressTopic, progress);
                 };
 
-                List<ShoppingProduct> shoppingProducts = shoppingService.findOffers(product, username, password, progressCallback);
+                // Use enhanced scraping for better specification matching
+                List<ShoppingProduct> shoppingProducts = shoppingService.findOffersEnhanced(product, username, password, progressCallback);
 
                 if (!shoppingProducts.isEmpty()) {
                     logger.info("SHOPPING RESULTS PROCESSING - Product: {}",
@@ -575,35 +577,40 @@ public class ProductService {
                 scrapedDetailsBuilder.append(" ").append(spec.getName()).append(" ").append(spec.getValue());
             }
         }
-        String scrapedDetails = scrapedDetailsBuilder.toString();
-
-        String originalText = originalDetails.toString().toLowerCase();
+        String scrapedDetails = scrapedDetailsBuilder.toString();        String originalText = originalDetails.toString().toLowerCase();
         String scrapedText = scrapedDetails.toLowerCase();
-          // Intelligent matching approach using specification comparison
+          // Enhanced matching approach with advanced image similarity
         double totalScore = 0.0;
         double maxScore = 0.0;
         
-        // 1. Core text similarity (50% weight) - Increased from 40%
+        // 1. Core text similarity (35% weight) - Reduced to accommodate enhanced image matching
         org.apache.commons.text.similarity.JaroWinklerSimilarity jaroWinkler = new org.apache.commons.text.similarity.JaroWinklerSimilarity();
         double jaroWinklerScore = jaroWinkler.apply(originalText, scrapedText);
-        totalScore += jaroWinklerScore * 0.5;
-        maxScore += 0.5;
+        totalScore += jaroWinklerScore * 0.35;
+        maxScore += 0.35;
         
-        // 2. Brand matching (25% weight) - Increased from 20%
+        // 2. Brand matching (20% weight)
         double brandScore = calculateBrandScore(originalProduct, scrapedText);
-        totalScore += brandScore * 0.25;
+        totalScore += brandScore * 0.20;
+        maxScore += 0.20;
+        
+        // 3. Enhanced image similarity (25% weight) - INCREASED: Advanced visual comparison
+        double imageScore = calculateImageSimilarityScore(originalProduct, scrapedProduct);
+        totalScore += imageScore * 0.25;
         maxScore += 0.25;
         
-        // 3. Specification-based matching (15% weight) - Reduced from 30%
+        // 4. Specification-based matching (12% weight)
         double specScore = calculateSpecificationScore(originalProduct, scrapedProduct);
-        totalScore += specScore * 0.15;
-        maxScore += 0.15;
+        totalScore += specScore * 0.12;
+        maxScore += 0.12;
         
-        // 4. Key terms overlap (10% weight) - Same as before
+        // 5. Key terms overlap (8% weight)
         double keyTermScore = calculateKeyTermScore(originalText, scrapedText);
-        totalScore += keyTermScore * 0.1;
-        maxScore += 0.1;        double finalScore = maxScore > 0 ? totalScore / maxScore : 0.0;
-        boolean matches = finalScore > 0.64; 
+        totalScore += keyTermScore * 0.08;
+        maxScore += 0.08;
+
+        double finalScore = maxScore > 0 ? totalScore / maxScore : 0.0;
+        boolean matches = finalScore > 0.62; // Slightly lowered threshold due to enhanced image matching
         
         // Clean structured logging for product matching
         String result = matches ? "ACCEPTED" : "REJECTED";
@@ -614,16 +621,16 @@ public class ProductService {
             originalDetails.toString().length() > 40 ?
                 originalDetails.toString().substring(0, 37) + "..." : originalDetails.toString(),
             scrapedProduct.getTitle().length() > 40 ?
-                scrapedProduct.getTitle().substring(0, 37) + "..." : scrapedProduct.getTitle());
-                  // Only log detailed breakdown for matches or close misses
+                scrapedProduct.getTitle().substring(0, 37) + "..." : scrapedProduct.getTitle());        // Only log detailed breakdown for matches or close misses
         if (matches || finalScore > 0.5) {
             logger.info("MATCH ANALYSIS - {} (Score: {}) | {}", 
                 result, 
                 String.format("%.3f", finalScore),
                 matches ? "ACCEPTED" : "REJECTED");
-            logger.info("  Breakdown - Text: {} | Brand: {} | Specs: {} | Terms: {} | Product: {}",
+            logger.info("  Breakdown - Text: {} | Brand: {} | Image: {} | Specs: {} | Terms: {} | Product: {}",
                 String.format("%.3f", jaroWinklerScore),
                 String.format("%.3f", brandScore),
+                String.format("%.3f", imageScore),
                 String.format("%.3f", specScore),
                 String.format("%.3f", keyTermScore),
                 scrapedProduct.getTitle().length() > 50 ?
@@ -664,88 +671,302 @@ public class ProductService {
         }
         
         return 0.0;
-    }
-    
-    /**
-     * Universal specification-based matching using available spec data
+    }    /**
+     * Enhanced specification-based matching with better variant handling
+     * Now handles color variants, model variations, and loose matching for better results
      */
     private double calculateSpecificationScore(ProductDocument originalProduct, ShoppingProduct scrapedProduct) {
-        if (originalProduct.getSpecifications() == null || originalProduct.getSpecifications().isEmpty()) {
-            // If no specs available for original, use high-level attribute matching
-            return calculateAttributeScore(originalProduct, scrapedProduct);
-        }
+        // Always try attribute matching first as primary method
+        double attributeScore = calculateAttributeScore(originalProduct, scrapedProduct);
         
-        int matchingSpecs = 0;
-        int totalSpecs = 0;
-        
-        // Compare specifications when available
-        for (com.example.price_comparator.model.SpecificationInfo originalSpec : originalProduct.getSpecifications()) {
-            totalSpecs++;
-            String specName = originalSpec.getName().toLowerCase();
-            String specValue = originalSpec.getValue().toLowerCase();
+        // If we have detailed specifications, try to improve the score
+        if (originalProduct.getSpecifications() != null && !originalProduct.getSpecifications().isEmpty()) {
+            int matchingSpecs = 0;
+            int totalSpecs = 0;
+            int criticalMatches = 0; // For important specs like brand, model, size
+            int totalCriticalSpecs = 0;
+            int looseMatches = 0; // For partial/variant matches
             
-            // Check if scraped product has matching specification
-            if (scrapedProduct.getSpecifications() != null) {
-                for (com.example.price_comparator.model.SpecificationInfo scrapedSpec : scrapedProduct.getSpecifications()) {
-                    if (scrapedSpec.getName().toLowerCase().contains(specName) ||
-                        specName.contains(scrapedSpec.getName().toLowerCase())) {
+            logger.debug("Checking {} specifications for product: {}", 
+                originalProduct.getSpecifications().size(),
+                originalProduct.getName().length() > 30 ? originalProduct.getName().substring(0, 27) + "..." : originalProduct.getName());
+            
+            // Build scraped text for fallback matching
+            String scrapedText = (scrapedProduct.getTitle() + " " +
+                                (scrapedProduct.getDescription() != null ? scrapedProduct.getDescription() : "")).toLowerCase();
+            
+            // Compare specifications when available
+            for (com.example.price_comparator.model.SpecificationInfo originalSpec : originalProduct.getSpecifications()) {
+                totalSpecs++;
+                String specName = originalSpec.getName().toLowerCase();
+                String specValue = originalSpec.getValue().toLowerCase();
+                
+                // Identify critical specifications for better matching
+                boolean isCriticalSpec = isCriticalSpecification(specName);
+                if (isCriticalSpec) {
+                    totalCriticalSpecs++;
+                }
+                
+                boolean foundMatch = false;
+                
+                // Strategy 1: Check structured specifications if available
+                if (scrapedProduct.getSpecifications() != null && !scrapedProduct.getSpecifications().isEmpty()) {
+                    for (com.example.price_comparator.model.SpecificationInfo scrapedSpec : scrapedProduct.getSpecifications()) {
+                        String scrapedSpecName = scrapedSpec.getName().toLowerCase();
+                        String scrapedSpecValue = scrapedSpec.getValue().toLowerCase();
                         
-                        if (areSpecValuesCompatible(specValue, scrapedSpec.getValue().toLowerCase())) {
-                            matchingSpecs++;
-                            break;
+                        if (areSpecificationNamesRelated(specName, scrapedSpecName)) {
+                            // Exact match
+                            if (areSpecValuesCompatible(specValue, scrapedSpecValue)) {
+                                matchingSpecs++;
+                                if (isCriticalSpec) criticalMatches++;
+                                foundMatch = true;
+                                logger.debug("✓ EXACT spec match: {} = '{}' vs '{}'", specName, specValue, scrapedSpecValue);
+                                break;
+                            }
+                            // Variant match (for colors, models, etc.)
+                            else if (areSpecValuesVariants(specValue, scrapedSpecValue, specName)) {
+                                looseMatches++;
+                                if (isCriticalSpec) criticalMatches++;
+                                foundMatch = true;
+                                logger.debug("✓ VARIANT spec match: {} = '{}' vs '{}' (variant)", specName, specValue, scrapedSpecValue);
+                                break;
+                            }
                         }
                     }
                 }
+                
+                // Strategy 2: Check in product text if no structured match found
+                if (!foundMatch) {
+                    if (scrapedText.contains(specValue)) {
+                        looseMatches++;
+                        if (isCriticalSpec) criticalMatches++;
+                        foundMatch = true;
+                        logger.debug("✓ TEXT spec match: {} = '{}' found in text", specName, specValue);
+                    }
+                    // For colors, check for partial matches (e.g., "blue" matches "navy blue")
+                    else if (specName.contains("color") || specName.contains("colour")) {
+                        if (isColorVariant(specValue, scrapedText)) {
+                            looseMatches++;
+                            if (isCriticalSpec) criticalMatches++;
+                            foundMatch = true;
+                            logger.debug("✓ COLOR variant match: '{}' found as color variant in text", specValue);
+                        }
+                    }
+                }
+                
+                if (!foundMatch) {
+                    logger.debug("✗ NO match for: {} = '{}'", specName, specValue);
+                }
+            }
+            
+            if (totalSpecs > 0) {
+                // Calculate combined score with both exact and loose matches
+                double exactScore = (double) matchingSpecs / totalSpecs;
+                double looseScore = (double) looseMatches / totalSpecs;
+                double combinedSpecScore = (exactScore * 0.8) + (looseScore * 0.4); // Weight exact matches more
+                
+                // Boost score if critical specifications match well
+                if (totalCriticalSpecs > 0) {
+                    double criticalScore = (double) criticalMatches / totalCriticalSpecs;
+                    combinedSpecScore = (combinedSpecScore * 0.7) + (criticalScore * 0.3); // Weight critical specs more
+                    logger.debug("Critical spec score: {}/{} = {:.3f} ({:.0f}%)", 
+                        criticalMatches, totalCriticalSpecs, criticalScore, criticalScore * 100);
+                }
+                
+                logger.debug("Enhanced spec score: exact={}/{}, loose={}/{}, combined={:.3f} ({:.0f}%)", 
+                    matchingSpecs, totalSpecs, looseMatches, totalSpecs, combinedSpecScore, combinedSpecScore * 100);
+                
+                // Use the better of attribute score or detailed spec score
+                return Math.max(attributeScore, combinedSpecScore);
+            }
+        } else {
+            logger.debug("No detailed specifications available, using attribute score: {:.3f}", attributeScore);
+        }
+        
+        return attributeScore;
+    }
+    
+    /**
+     * Check if a specification name indicates a critical product attribute
+     */
+    private boolean isCriticalSpecification(String specName) {
+        String[] criticalSpecs = {
+            "brand", "model", "size", "color", "material", "type", 
+            "display size", "storage", "ram", "processor", "camera",
+            "battery", "weight", "dimensions"
+        };
+        
+        for (String critical : criticalSpecs) {
+            if (specName.contains(critical) || critical.contains(specName)) {
+                return true;
             }
         }
+        return false;
+    }
+    
+    /**
+     * Check if two specification names are related (handles variations in naming)
+     */
+    private boolean areSpecificationNamesRelated(String name1, String name2) {
+        // Direct match
+        if (name1.equals(name2)) return true;
         
-        if (totalSpecs == 0) {
-            return calculateAttributeScore(originalProduct, scrapedProduct);
+        // Check if either contains the other
+        if (name1.contains(name2) || name2.contains(name1)) return true;
+        
+        // Check for common variations
+        String[][] synonyms = {
+            {"color", "colour"},
+            {"size", "dimensions"},
+            {"weight", "mass"},
+            {"material", "made of", "construction"},
+            {"display", "screen"},
+            {"storage", "capacity", "memory"},
+            {"battery", "power", "mah"},
+            {"processor", "cpu", "chip"},
+            {"camera", "megapixel", "mp"},
+            {"connectivity", "wireless", "bluetooth", "wifi"}
+        };
+        
+        for (String[] group : synonyms) {
+            boolean name1InGroup = false;
+            boolean name2InGroup = false;
+            
+            for (String synonym : group) {
+                if (name1.contains(synonym)) name1InGroup = true;
+                if (name2.contains(synonym)) name2InGroup = true;
+            }
+            
+            if (name1InGroup && name2InGroup) return true;
         }
         
-        return (double) matchingSpecs / totalSpecs;
-    }
-      /**
-     * Fallback attribute matching for products without detailed specifications
+        return false;
+    }/**
+     * Enhanced fallback attribute matching for products without detailed specifications
      */
     private double calculateAttributeScore(ProductDocument originalProduct, ShoppingProduct scrapedProduct) {
         double score = 0.0;
         int attributes = 0;
+        int matches = 0;
         
         String scrapedText = (scrapedProduct.getTitle() + " " +
                              (scrapedProduct.getDescription() != null ? scrapedProduct.getDescription() : "")).toLowerCase();
         
-        // Check key attributes that are commonly available
-        if (originalProduct.getColor() != null) {
+        String originalText = (originalProduct.getName() + " " +
+                              (originalProduct.getDescription() != null ? originalProduct.getDescription() : "")).toLowerCase();
+          // Enhanced color matching with variants
+        if (originalProduct.getColor() != null && !originalProduct.getColor().trim().isEmpty()) {
             attributes++;
-            if (scrapedText.contains(originalProduct.getColor().toLowerCase())) {
+            String originalColor = originalProduct.getColor().toLowerCase().trim();
+            
+            // Exact match
+            if (scrapedText.contains(originalColor)) {
                 score += 1.0;
+                matches++;
+                logger.debug("✓ EXACT color match found: {}", originalColor);
+            }
+            // Variant match
+            else if (isColorVariant(originalColor, scrapedText)) {
+                score += 0.8; // Slightly lower score for variant
+                matches++;
+                logger.debug("✓ COLOR variant match found: {} (variant in text)", originalColor);
+            }
+            // Base color match (e.g., "blue" in "navy blue")
+            else if (hasBaseColorMatch(originalColor, scrapedText)) {
+                score += 0.6;
+                matches++;
+                logger.debug("✓ BASE color match found: {} (base color in text)", originalColor);
+            }
+            else {
+                logger.debug("✗ NO color match for: {}", originalColor);
+            }
+        }
+          // Enhanced storage matching with normalization
+        if (originalProduct.getStorage() != null && !originalProduct.getStorage().trim().isEmpty()) {
+            attributes++;
+            String originalStorage = originalProduct.getStorage().toLowerCase().trim();
+            String normalizedStorage = originalStorage.replaceAll("\\s+", "");
+            
+            if (scrapedText.contains(originalStorage) || scrapedText.replaceAll("\\s+", "").contains(normalizedStorage)) {
+                score += 1.0;
+                matches++;
+                logger.debug("✓ STORAGE match found: {}", originalStorage);
+            } else {
+                logger.debug("✗ NO storage match for: {}", originalStorage);
+            }
+        }
+
+        // Enhanced RAM matching with normalization
+        if (originalProduct.getRam() != null && !originalProduct.getRam().trim().isEmpty()) {
+            attributes++;
+            String originalRam = originalProduct.getRam().toLowerCase().trim();
+            String normalizedRam = originalRam.replaceAll("\\s+", "");
+            
+            if (scrapedText.contains(originalRam) || scrapedText.replaceAll("\\s+", "").contains(normalizedRam)) {
+                score += 1.0;
+                matches++;
+                logger.debug("✓ RAM match found: {}", originalRam);
+            } else {
+                logger.debug("✗ NO RAM match for: {}", originalRam);
+            }
+        }
+
+        // Enhanced model matching with partial matching
+        if (originalProduct.getModel() != null && !originalProduct.getModel().trim().isEmpty()) {
+            attributes++;
+            String originalModel = originalProduct.getModel().toLowerCase().trim();
+            
+            if (scrapedText.contains(originalModel)) {
+                score += 1.0;
+                matches++;
+                logger.debug("✓ EXACT model match found: {}", originalModel);
+            } else if (areModelVariants(originalModel, scrapedText)) {
+                score += 0.8;
+                matches++;
+                logger.debug("✓ MODEL variant match found: {}", originalModel);
+            } else {
+                logger.debug("✗ NO model match for: {}", originalModel);
             }
         }
         
-        if (originalProduct.getStorage() != null) {
-            attributes++;
-            if (scrapedText.contains(originalProduct.getStorage().toLowerCase())) {
-                score += 1.0;
+        // Additional attribute checks for common product features
+        String[] commonKeywords = extractImportantKeywords(originalText);
+        for (String keyword : commonKeywords) {
+            if (keyword.length() > 3 && scrapedText.contains(keyword)) {
+                attributes++;
+                score += 0.5; // Lower weight for keyword matches
+                matches++;
+                logger.debug("Keyword match found: {}", keyword);
             }
         }
         
-        if (originalProduct.getRam() != null) {
-            attributes++;
-            if (scrapedText.contains(originalProduct.getRam().toLowerCase())) {
-                score += 1.0;
-            }
+        double finalScore;
+        if (attributes > 0) {
+            finalScore = score / attributes;
+        } else {
+            // If no specific attributes found, give a moderate score based on text similarity
+            finalScore = 0.4; // Increased base score for products without structured attributes
         }
         
-        if (originalProduct.getModel() != null) {
-            attributes++;
-            if (scrapedText.contains(originalProduct.getModel().toLowerCase())) {
-                score += 1.0;
-            }
-        }
+        logger.debug("Attribute matching: {}/{} matches, {} total attributes, final score: {}", 
+            matches, attributes, attributes, String.format("%.3f", finalScore));
         
-        // If no specific attributes found, give a moderate score based on text similarity
-        return attributes > 0 ? score / attributes : 0.8; // Increased from 0.7 to 0.8 for better matching
+        return Math.min(1.0, finalScore); // Cap at 1.0
+    }
+      /**
+     * Extract important keywords from product text for attribute matching
+     */
+    private String[] extractImportantKeywords(String text) {
+        // Extract meaningful keywords (model numbers, sizes, technical terms)
+        return java.util.Arrays.stream(text.toLowerCase()
+                   .replaceAll("[^a-z0-9\\s]", " ")
+                   .split("\\s+"))
+                   .filter(word -> word.length() > 3)
+                   .filter(word -> word.matches(".*\\d.*") || word.matches("^[a-z]{4,}$")) // Numbers or long words
+                   .distinct()
+                   .limit(10) // Limit to 10 keywords
+                   .toArray(String[]::new);
     }
     
     /**
@@ -881,10 +1102,178 @@ public class ProductService {
             return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
                     .thenApply(v -> futures.stream()
                             .map(CompletableFuture::join)
-                            .filter(java.util.Objects::nonNull)
-                            .collect(Collectors.toList()));
+                            .filter(java.util.Objects::nonNull)                            .collect(Collectors.toList()));
         });
     }    /**
+     * Calculate image similarity score between original and scraped product
+     * Uses enhanced perceptual hashing with multiple algorithms for visual comparison
+     */
+    private double calculateImageSimilarityScore(ProductDocument originalProduct, ShoppingProduct scrapedProduct) {
+        try {
+            String originalImageUrl = originalProduct.getImageUrl();
+            String scrapedImageUrl = scrapedProduct.getImageUrl();
+            
+            // If either product has no image, return lower neutral score
+            if (originalImageUrl == null || scrapedImageUrl == null || 
+                originalImageUrl.trim().isEmpty() || scrapedImageUrl.trim().isEmpty()) {
+                logger.debug("Image comparison skipped - missing image URLs (original: {}, scraped: {})", 
+                    originalImageUrl != null ? "present" : "null", 
+                    scrapedImageUrl != null ? "present" : "null");
+                return 0.3; // Lower neutral score when images not available (was 0.5)
+            }
+            
+            // Check for exact image URLs first (fastest check)
+            if (originalImageUrl.equals(scrapedImageUrl)) {
+                logger.debug("Image exact URL match found");
+                return 1.0;
+            }
+            
+            // Use enhanced multi-algorithm similarity calculation
+            double advancedSimilarity = imageHashingService.calculateAdvancedSimilarity(originalImageUrl, scrapedImageUrl);
+            
+            if (advancedSimilarity > 0.8) {
+                logger.debug("High image similarity detected: {} for URLs: {} vs {}", 
+                    String.format("%.3f", advancedSimilarity),
+                    originalImageUrl.length() > 50 ? originalImageUrl.substring(0, 47) + "..." : originalImageUrl,
+                    scrapedImageUrl.length() > 50 ? scrapedImageUrl.substring(0, 47) + "..." : scrapedImageUrl);
+            }
+            
+            // Fallback to individual hash comparison if advanced fails
+            if (advancedSimilarity < 0.1) {
+                logger.debug("Advanced similarity too low ({}), trying fallback hash comparison", 
+                    String.format("%.3f", advancedSimilarity));
+                
+                // Generate or retrieve image hashes for fallback comparison
+                String originalPerceptualHash = getOrGeneratePerceptualHash(originalProduct, originalImageUrl);
+                String scrapedPerceptualHash = getOrGeneratePerceptualHash(scrapedProduct, scrapedImageUrl);
+                
+                if (originalPerceptualHash != null && scrapedPerceptualHash != null) {
+                    double hashSimilarity = imageHashingService.calculateSimilarity(originalPerceptualHash, scrapedPerceptualHash);
+                    advancedSimilarity = Math.max(advancedSimilarity, hashSimilarity);
+                    logger.debug("Fallback hash similarity: {}", String.format("%.3f", hashSimilarity));
+                } else {
+                    // If hashing fails, check MD5 hashes for exact image content match
+                    String originalMD5 = getOrGenerateMD5Hash(originalProduct, originalImageUrl);
+                    String scrapedMD5 = getOrGenerateMD5Hash(scrapedProduct, scrapedImageUrl);
+                    
+                    if (originalMD5 != null && scrapedMD5 != null && originalMD5.equals(scrapedMD5)) {
+                        logger.debug("Image MD5 hash exact match found");
+                        return 1.0;
+                    }
+                    
+                    logger.debug("Image processing failed - using default score (original hash: {}, scraped hash: {})",
+                        originalPerceptualHash != null ? "present" : "null",
+                        scrapedPerceptualHash != null ? "present" : "null");
+                    return 0.3; // Default score if hashing fails (was 0.5)
+                }
+            }
+            
+            logger.debug("Final image similarity score: {} for original: {} vs scraped: {}", 
+                String.format("%.3f", advancedSimilarity), 
+                originalImageUrl.length() > 50 ? originalImageUrl.substring(0, 47) + "..." : originalImageUrl,
+                scrapedImageUrl.length() > 50 ? scrapedImageUrl.substring(0, 47) + "..." : scrapedImageUrl);
+            
+            return advancedSimilarity;
+            
+        } catch (Exception e) {
+            logger.debug("Error calculating enhanced image similarity: {} - using default score", e.getMessage());
+            return 0.3; // Default score on error (was 0.5)
+        }
+    }
+    
+    /**
+     * Get or generate perceptual hash for a product image
+     */
+    private String getOrGeneratePerceptualHash(ProductDocument product, String imageUrl) {
+        if (product.getImagePerceptualHash() != null) {
+            return product.getImagePerceptualHash();
+        }
+        
+        try {
+            CompletableFuture<String> hashFuture = imageHashingService.generatePerceptualHash(imageUrl);
+            String hash = hashFuture.get(10, java.util.concurrent.TimeUnit.SECONDS);
+            
+            if (hash != null) {
+                product.setImagePerceptualHash(hash);
+                // Optionally update in database asynchronously
+                updateProductHashAsync(product);
+            }
+            
+            return hash;
+        } catch (Exception e) {
+            logger.debug("Failed to generate perceptual hash for image: {} - {}", imageUrl, e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Get or generate perceptual hash for a scraped product image
+     */
+    private String getOrGeneratePerceptualHash(ShoppingProduct product, String imageUrl) {
+        if (product.getImagePerceptualHash() != null) {
+            return product.getImagePerceptualHash();
+        }
+        
+        try {
+            CompletableFuture<String> hashFuture = imageHashingService.generatePerceptualHash(imageUrl);
+            String hash = hashFuture.get(10, java.util.concurrent.TimeUnit.SECONDS);
+            
+            if (hash != null) {
+                product.setImagePerceptualHash(hash);
+            }
+            
+            return hash;
+        } catch (Exception e) {
+            logger.debug("Failed to generate perceptual hash for scraped image: {} - {}", imageUrl, e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Get or generate MD5 hash for exact image matching
+     */
+    private String getOrGenerateMD5Hash(ProductDocument product, String imageUrl) {
+        if (product.getImageMD5Hash() != null) {
+            return product.getImageMD5Hash();
+        }
+        
+        String hash = imageHashingService.generateMD5Hash(imageUrl);
+        if (hash != null) {
+            product.setImageMD5Hash(hash);
+            updateProductHashAsync(product);
+        }
+        
+        return hash;
+    }
+    
+    /**
+     * Get or generate MD5 hash for scraped product
+     */
+    private String getOrGenerateMD5Hash(ShoppingProduct product, String imageUrl) {
+        if (product.getImageMD5Hash() != null) {
+            return product.getImageMD5Hash();
+        }
+        
+        String hash = imageHashingService.generateMD5Hash(imageUrl);
+        if (hash != null) {
+            product.setImageMD5Hash(hash);
+        }
+        
+        return hash;
+    }
+      /**
+     * Asynchronously update product hash in database
+     */
+    @Async
+    private void updateProductHashAsync(ProductDocument product) {
+        try {
+            firebaseService.saveProduct(product);
+        } catch (Exception e) {
+            logger.debug("Failed to update product hash in database: {}", e.getMessage());
+        }
+    }
+    
+    /**
      * Normalizes retailer names to handle variations
      */
     private String normalizeRetailerName(String retailerName) {
@@ -1130,4 +1519,157 @@ public class ProductService {
       /**
      * Extracts brand name from product title when brand field is not available
      */
+    private String extractBrandFromTitle(String title) {
+        if (title == null || title.isEmpty()) {
+            return null;
+        }
+        
+        // Simple heuristic: Take the first capitalized word as brand
+        String[] words = title.split("\\s+");
+        for (String word : words) {
+            if (Character.isUpperCase(word.charAt(0))) {
+                return word;
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Check if two specification values are variants of each other
+     * Handles cases like "Blue" vs "Navy Blue", "64GB" vs "64 GB", etc.
+     */
+    private boolean areSpecValuesVariants(String originalValue, String scrapedValue, String specName) {
+        if (originalValue == null || scrapedValue == null) return false;
+        
+        String orig = originalValue.trim();
+        String scraped = scrapedValue.trim();
+        
+        // Handle color variants
+        if (specName.contains("color") || specName.contains("colour")) {
+            return areColorVariants(orig, scraped);
+        }
+        
+        // Handle size/storage variants (normalize spacing and units)
+        if (specName.contains("size") || specName.contains("storage") || specName.contains("memory")) {
+            String normalizedOrig = orig.replaceAll("\\s+", "").toLowerCase();
+            String normalizedScraped = scraped.replaceAll("\\s+", "").toLowerCase();
+            return normalizedOrig.equals(normalizedScraped) || 
+                   normalizedOrig.contains(normalizedScraped) || 
+                   normalizedScraped.contains(normalizedOrig);
+        }
+        
+        // Handle model variants (partial matching)
+        if (specName.contains("model")) {
+            return orig.contains(scraped) || scraped.contains(orig) ||
+                   areModelVariants(orig, scraped);
+        }
+        
+        // General variant matching - check if one contains the other
+        return orig.contains(scraped) || scraped.contains(orig);
+    }
+    
+    /**
+     * Check if two colors are variants (e.g., "Blue" and "Navy Blue")
+     */
+    private boolean areColorVariants(String color1, String color2) {
+        String[] baseColors = {"red", "blue", "green", "yellow", "black", "white", "gray", "grey", 
+                              "purple", "pink", "orange", "brown", "silver", "gold"};
+        
+        String c1 = color1.toLowerCase();
+        String c2 = color2.toLowerCase();
+        
+        // Check if both colors contain the same base color
+        for (String baseColor : baseColors) {
+            if (c1.contains(baseColor) && c2.contains(baseColor)) {
+                return true;
+            }
+        }
+        
+        // Check for common color synonyms
+        String[][] colorSynonyms = {
+            {"grey", "gray"},
+            {"silver", "metallic"},
+            {"gold", "golden"},
+            {"black", "dark"},
+            {"white", "light"}
+        };
+        
+        for (String[] synonyms : colorSynonyms) {
+            boolean c1HasSynonym = false;
+            boolean c2HasSynonym = false;
+            
+            for (String synonym : synonyms) {
+                if (c1.contains(synonym)) c1HasSynonym = true;
+                if (c2.contains(synonym)) c2HasSynonym = true;
+            }
+            
+            if (c1HasSynonym && c2HasSynonym) return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Check if a color value appears as a variant in the text
+     */
+    private boolean isColorVariant(String colorValue, String text) {
+        String color = colorValue.toLowerCase();
+        String searchText = text.toLowerCase();
+        
+        // Direct match
+        if (searchText.contains(color)) return true;
+        
+        // Check for color variants in text
+        String[] baseColors = {"red", "blue", "green", "yellow", "black", "white", "gray", "grey", 
+                              "purple", "pink", "orange", "brown", "silver", "gold"};
+        
+        for (String baseColor : baseColors) {
+            if (color.contains(baseColor) && searchText.contains(baseColor)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+      /**
+     * Check if two model values are variants or if a model appears in text
+     */
+    private boolean areModelVariants(String model1, String textOrModel2) {
+        String m1 = model1.toLowerCase().replaceAll("[^a-z0-9]", "");
+        String m2 = textOrModel2.toLowerCase().replaceAll("[^a-z0-9]", "");
+        
+        // Check if core model numbers match
+        if (m1.length() >= 3 && m2.length() >= 3) {
+            return m1.contains(m2.substring(0, Math.min(3, m2.length()))) ||
+                   m2.contains(m1.substring(0, Math.min(3, m1.length()))) ||
+                   m2.contains(m1) || m1.contains(m2);
+        }
+        
+        return m2.contains(m1) || m1.contains(m2);
+    }
+
+    /**
+     * Check if text contains a base color that matches the original color
+     * E.g., "blue" matches text containing "navy blue" or "light blue"
+     */
+    private boolean hasBaseColorMatch(String originalColor, String text) {
+        String[] baseColors = {"red", "blue", "green", "yellow", "black", "white", "gray", "grey", 
+                              "purple", "pink", "orange", "brown", "silver", "gold"};
+        
+        String color = originalColor.toLowerCase();
+        String searchText = text.toLowerCase();
+        
+        // Find which base color the original contains
+        for (String baseColor : baseColors) {
+            if (color.contains(baseColor)) {
+                // Check if the text contains this base color
+                if (searchText.contains(baseColor)) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
 }
