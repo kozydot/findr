@@ -573,38 +573,36 @@ public class ProductService {
             for (com.example.price_comparator.model.SpecificationInfo spec : scrapedProduct.getSpecifications()) {
                 scrapedDetailsBuilder.append(" ").append(spec.getName()).append(" ").append(spec.getValue());
             }
-        }
-        String scrapedDetails = scrapedDetailsBuilder.toString();        String originalText = originalDetails.toString().toLowerCase();
+        }        String scrapedDetails = scrapedDetailsBuilder.toString();
+        
+        String originalText = originalDetails.toString().toLowerCase();
         String scrapedText = scrapedDetails.toLowerCase();
-          // Enhanced matching approach with advanced image similarity
+        
+        // Enhanced matching approach without image similarity
         double totalScore = 0.0;
         double maxScore = 0.0;
         
-        // 1. Core text similarity (35% weight) - Reduced to accommodate enhanced image matching
+        // 1. Core text similarity (40% weight) - Increased from 35%
         org.apache.commons.text.similarity.JaroWinklerSimilarity jaroWinkler = new org.apache.commons.text.similarity.JaroWinklerSimilarity();
         double jaroWinklerScore = jaroWinkler.apply(originalText, scrapedText);
-        totalScore += jaroWinklerScore * 0.35;
-        maxScore += 0.35;
+        totalScore += jaroWinklerScore * 0.40;
+        maxScore += 0.40;
         
-        // 2. Brand matching (20% weight)
+        // 2. Brand matching (25% weight) - Increased from 20%
         double brandScore = calculateBrandScore(originalProduct, scrapedText);
-        totalScore += brandScore * 0.20;
-        maxScore += 0.20;
-        
-        // 3. Enhanced image similarity (25% weight) - INCREASED: Advanced visual comparison
-        double imageScore = calculateImageSimilarityScore(originalProduct, scrapedProduct);
-        totalScore += imageScore * 0.25;
+        totalScore += brandScore * 0.25;
         maxScore += 0.25;
         
-        // 4. Specification-based matching (12% weight)
+        // 3. Specification-based matching (20% weight) - Increased from 12%
         double specScore = calculateSpecificationScore(originalProduct, scrapedProduct);
-        totalScore += specScore * 0.12;
-        maxScore += 0.12;
-        
-        // 5. Key terms overlap (8% weight)
+        totalScore += specScore * 0.20;
+        maxScore += 0.20;
+          // 4. Key terms overlap (15% weight) - Increased from 8%
         double keyTermScore = calculateKeyTermScore(originalText, scrapedText);
-        totalScore += keyTermScore * 0.08;
-        maxScore += 0.08;        double finalScore = maxScore > 0 ? totalScore / maxScore : 0.0;
+        totalScore += keyTermScore * 0.15;
+        maxScore += 0.15;
+        
+        double finalScore = maxScore > 0 ? totalScore / maxScore : 0.0;
         
         // Dynamic threshold based on product type
         double threshold = getDynamicMatchingThreshold(originalProduct, scrapedProduct);
@@ -625,10 +623,9 @@ public class ProductService {
                 result, 
                 String.format("%.3f", finalScore),
                 matches ? "ACCEPTED" : "REJECTED");
-            logger.info("  Breakdown - Text: {} | Brand: {} | Image: {} | Specs: {} | Terms: {} | Product: {}",
+            logger.info("  Breakdown - Text: {} | Brand: {} | Specs: {} | Terms: {} | Product: {}",
                 String.format("%.3f", jaroWinklerScore),
                 String.format("%.3f", brandScore),
-                String.format("%.3f", imageScore),
                 String.format("%.3f", specScore),
                 String.format("%.3f", keyTermScore),
                 scrapedProduct.getTitle().length() > 50 ?
@@ -1209,136 +1206,6 @@ public class ProductService {
                             .map(CompletableFuture::join)
                             .filter(java.util.Objects::nonNull)                            .collect(Collectors.toList()));
         });
-    }    /**
-     * Calculate image similarity score between original and scraped product
-     * Simplified version - only compares image URLs
-     */
-    private double calculateImageSimilarityScore(ProductDocument originalProduct, ShoppingProduct scrapedProduct) {
-        try {
-            String originalImageUrl = originalProduct.getImageUrl();
-            String scrapedImageUrl = scrapedProduct.getImageUrl();
-            
-            // If either product has no image, return lower neutral score
-            if (originalImageUrl == null || scrapedImageUrl == null || 
-                originalImageUrl.trim().isEmpty() || scrapedImageUrl.trim().isEmpty()) {
-                logger.debug("Image comparison skipped - missing image URLs (original: {}, scraped: {})", 
-                    originalImageUrl != null ? "present" : "null", 
-                    scrapedImageUrl != null ? "present" : "null");
-                return 0.3; // Lower neutral score when images not available
-            }
-            
-            // Check for exact image URLs (only reliable comparison without image hashing)
-            if (originalImageUrl.equals(scrapedImageUrl)) {
-                logger.debug("Image exact URL match found");
-                return 1.0;
-            }
-            
-            // Check for similar image URLs (same domain, similar path)
-            double urlSimilarity = calculateImageUrlSimilarity(originalImageUrl, scrapedImageUrl);
-            
-            logger.debug("Image URL similarity score: {} for original: {} vs scraped: {}", 
-                String.format("%.3f", urlSimilarity), 
-                originalImageUrl.length() > 50 ? originalImageUrl.substring(0, 47) + "..." : originalImageUrl,
-                scrapedImageUrl.length() > 50 ? scrapedImageUrl.substring(0, 47) + "..." : scrapedImageUrl);
-            
-            return urlSimilarity;
-            
-        } catch (Exception e) {
-            logger.debug("Error calculating image similarity: {} - using default score", e.getMessage());
-            return 0.3; // Default score on error
-        }
-    }
-    
-    /**
-     * Calculate similarity between image URLs based on domain and path structure
-     */
-    private double calculateImageUrlSimilarity(String url1, String url2) {
-        try {
-            if (url1.equals(url2)) {
-                return 1.0;
-            }
-            
-            // Extract domain and path components
-            String domain1 = extractDomain(url1);
-            String domain2 = extractDomain(url2);
-            String path1 = extractPath(url1);
-            String path2 = extractPath(url2);
-            
-            // Same domain gives base similarity
-            if (domain1.equals(domain2)) {
-                // Check path similarity for images from same domain
-                double pathSimilarity = calculateStringSimilarity(path1, path2);
-                return Math.min(0.8, 0.5 + (pathSimilarity * 0.3)); // Max 0.8 for URL similarity
-            }
-            
-            // Different domains - very low similarity
-            return 0.1;
-            
-        } catch (Exception e) {
-            logger.debug("Error calculating URL similarity: {}", e.getMessage());
-            return 0.1;
-        }
-    }
-    
-    /**
-     * Extract domain from URL
-     */
-    private String extractDomain(String url) {
-        try {
-            if (url.startsWith("http")) {
-                int domainStart = url.indexOf("://") + 3;
-                int domainEnd = url.indexOf("/", domainStart);
-                if (domainEnd == -1) domainEnd = url.length();
-                return url.substring(domainStart, domainEnd).toLowerCase();
-            }
-            return "";
-        } catch (Exception e) {
-            return "";
-        }
-    }
-    
-    /**
-     * Extract path from URL
-     */
-    private String extractPath(String url) {
-        try {
-            if (url.startsWith("http")) {
-                int domainStart = url.indexOf("://") + 3;
-                int pathStart = url.indexOf("/", domainStart);
-                if (pathStart != -1) {
-                    return url.substring(pathStart).toLowerCase();
-                }
-            }
-            return "";
-        } catch (Exception e) {
-            return "";
-        }
-    }
-    
-    /**
-     * Calculate simple string similarity using Jaccard index
-     */
-    private double calculateStringSimilarity(String str1, String str2) {
-        try {
-            if (str1 == null || str2 == null) return 0.0;
-            if (str1.equals(str2)) return 1.0;
-            
-            // Convert to sets of characters for Jaccard similarity
-            Set<Character> set1 = str1.chars().mapToObj(c -> (char) c).collect(Collectors.toSet());
-            Set<Character> set2 = str2.chars().mapToObj(c -> (char) c).collect(Collectors.toSet());
-            
-            Set<Character> intersection = new HashSet<>(set1);
-            intersection.retainAll(set2);
-            
-            Set<Character> union = new HashSet<>(set1);
-            union.addAll(set2);
-            
-            return union.isEmpty() ? 0.0 : (double) intersection.size() / union.size();
-            
-        } catch (Exception e) {
-            logger.debug("Error calculating string similarity: {}", e.getMessage());
-            return 0.0;
-        }
     }    
     /**
      * Normalizes retailer names to handle variations
