@@ -607,10 +607,11 @@ public class ProductService {
         // 5. Key terms overlap (8% weight)
         double keyTermScore = calculateKeyTermScore(originalText, scrapedText);
         totalScore += keyTermScore * 0.08;
-        maxScore += 0.08;
-
-        double finalScore = maxScore > 0 ? totalScore / maxScore : 0.0;
-        boolean matches = finalScore > 0.62; // Slightly lowered threshold due to enhanced image matching
+        maxScore += 0.08;        double finalScore = maxScore > 0 ? totalScore / maxScore : 0.0;
+        
+        // Dynamic threshold based on product type
+        double threshold = getDynamicMatchingThreshold(originalProduct, scrapedProduct);
+        boolean matches = finalScore > threshold;
         
         // Clean structured logging for product matching
         String result = matches ? "ACCEPTED" : "REJECTED";
@@ -638,8 +639,7 @@ public class ProductService {
         }
         
         return matches;
-    }
-      /**
+    }    /**
      * Universal brand scoring that works across all product categories
      */
     private double calculateBrandScore(ProductDocument originalProduct, String scrapedText) {
@@ -653,6 +653,30 @@ public class ProductService {
         
         if (brand != null && scrapedText.contains(brand)) {
             return 1.0;
+        }
+        
+        // Enhanced brand matching for different product categories
+        String productCategory = detectProductCategory(originalProduct);
+        
+        // For books, try to match publisher or author names from title
+        if ("books".equals(productCategory)) {
+            String[] titleWords = originalProduct.getName().split("\\s+");
+            // Check if any significant word from title appears in scraped text
+            for (String word : titleWords) {
+                if (word.length() > 4 && !isCommonStopWord(word.toLowerCase()) && 
+                    scrapedText.contains(word.toLowerCase())) {
+                    return 0.8; // Good match for book title elements
+                }
+            }
+        }
+        
+        // For general products, try partial brand matching
+        if (brand != null && brand.length() > 3) {
+            // Check for partial brand match (first 3-4 characters)
+            String partialBrand = brand.substring(0, Math.min(4, brand.length()));
+            if (scrapedText.contains(partialBrand)) {
+                return 0.6; // Partial brand match
+            }
         }
         
         // For renewed products, also check for the brand without "renewed" context
@@ -671,7 +695,7 @@ public class ProductService {
         }
         
         return 0.0;
-    }    /**
+    }/**
      * Enhanced specification-based matching with better variant handling
      * Now handles color variants, model variations, and loose matching for better results
      */
@@ -842,7 +866,7 @@ public class ProductService {
         }
         
         return false;
-    }/**
+    }    /**
      * Enhanced fallback attribute matching for products without detailed specifications
      */
     private double calculateAttributeScore(ProductDocument originalProduct, ShoppingProduct scrapedProduct) {
@@ -855,7 +879,12 @@ public class ProductService {
         
         String originalText = (originalProduct.getName() + " " +
                               (originalProduct.getDescription() != null ? originalProduct.getDescription() : "")).toLowerCase();
-          // Enhanced color matching with variants
+        
+        // Detect product category for adaptive matching
+        String productCategory = detectProductCategory(originalProduct);
+        boolean isElectronic = productCategory.equals("electronics");
+        
+        // Enhanced color matching with variants
         if (originalProduct.getColor() != null && !originalProduct.getColor().trim().isEmpty()) {
             attributes++;
             String originalColor = originalProduct.getColor().toLowerCase().trim();
@@ -882,62 +911,91 @@ public class ProductService {
                 logger.debug("✗ NO color match for: {}", originalColor);
             }
         }
-          // Enhanced storage matching with normalization
-        if (originalProduct.getStorage() != null && !originalProduct.getStorage().trim().isEmpty()) {
-            attributes++;
-            String originalStorage = originalProduct.getStorage().toLowerCase().trim();
-            String normalizedStorage = originalStorage.replaceAll("\\s+", "");
-            
-            if (scrapedText.contains(originalStorage) || scrapedText.replaceAll("\\s+", "").contains(normalizedStorage)) {
-                score += 1.0;
-                matches++;
-                logger.debug("✓ STORAGE match found: {}", originalStorage);
-            } else {
-                logger.debug("✗ NO storage match for: {}", originalStorage);
+        
+        // Electronic-specific attributes (only for electronic products)
+        if (isElectronic) {
+            // Enhanced storage matching with normalization
+            if (originalProduct.getStorage() != null && !originalProduct.getStorage().trim().isEmpty()) {
+                attributes++;
+                String originalStorage = originalProduct.getStorage().toLowerCase().trim();
+                String normalizedStorage = originalStorage.replaceAll("\\s+", "");
+                
+                if (scrapedText.contains(originalStorage) || scrapedText.replaceAll("\\s+", "").contains(normalizedStorage)) {
+                    score += 1.0;
+                    matches++;
+                    logger.debug("✓ STORAGE match found: {}", originalStorage);
+                } else {
+                    logger.debug("✗ NO storage match for: {}", originalStorage);
+                }
+            }
+
+            // Enhanced RAM matching with normalization
+            if (originalProduct.getRam() != null && !originalProduct.getRam().trim().isEmpty()) {
+                attributes++;
+                String originalRam = originalProduct.getRam().toLowerCase().trim();
+                String normalizedRam = originalRam.replaceAll("\\s+", "");
+                
+                if (scrapedText.contains(originalRam) || scrapedText.replaceAll("\\s+", "").contains(normalizedRam)) {
+                    score += 1.0;
+                    matches++;
+                    logger.debug("✓ RAM match found: {}", originalRam);
+                } else {
+                    logger.debug("✗ NO RAM match for: {}", originalRam);
+                }
+            }
+
+            // Enhanced model matching with partial matching
+            if (originalProduct.getModel() != null && !originalProduct.getModel().trim().isEmpty()) {
+                attributes++;
+                String originalModel = originalProduct.getModel().toLowerCase().trim();
+                
+                if (scrapedText.contains(originalModel)) {
+                    score += 1.0;
+                    matches++;
+                    logger.debug("✓ EXACT model match found: {}", originalModel);
+                } else if (areModelVariants(originalModel, scrapedText)) {
+                    score += 0.8;
+                    matches++;
+                    logger.debug("✓ MODEL variant match found: {}", originalModel);
+                } else {
+                    logger.debug("✗ NO model match for: {}", originalModel);
+                }
             }
         }
-
-        // Enhanced RAM matching with normalization
-        if (originalProduct.getRam() != null && !originalProduct.getRam().trim().isEmpty()) {
-            attributes++;
-            String originalRam = originalProduct.getRam().toLowerCase().trim();
-            String normalizedRam = originalRam.replaceAll("\\s+", "");
-            
-            if (scrapedText.contains(originalRam) || scrapedText.replaceAll("\\s+", "").contains(normalizedRam)) {
-                score += 1.0;
+          // Universal attribute matching for all product types
+        // Extract and match important keywords from product names/descriptions
+        String[] originalKeywords = extractCategorySpecificKeywords(originalText, productCategory);
+        
+        for (String keyword : originalKeywords) {
+            if (keyword.length() > 2 && scrapedText.contains(keyword)) {
+                attributes++;
+                score += 0.7; // Good weight for keyword matches
                 matches++;
-                logger.debug("✓ RAM match found: {}", originalRam);
-            } else {
-                logger.debug("✗ NO RAM match for: {}", originalRam);
-            }
-        }
-
-        // Enhanced model matching with partial matching
-        if (originalProduct.getModel() != null && !originalProduct.getModel().trim().isEmpty()) {
-            attributes++;
-            String originalModel = originalProduct.getModel().toLowerCase().trim();
-            
-            if (scrapedText.contains(originalModel)) {
-                score += 1.0;
-                matches++;
-                logger.debug("✓ EXACT model match found: {}", originalModel);
-            } else if (areModelVariants(originalModel, scrapedText)) {
-                score += 0.8;
-                matches++;
-                logger.debug("✓ MODEL variant match found: {}", originalModel);
-            } else {
-                logger.debug("✗ NO model match for: {}", originalModel);
+                logger.debug("✓ KEYWORD match found: {}", keyword);
             }
         }
         
-        // Additional attribute checks for common product features
-        String[] commonKeywords = extractImportantKeywords(originalText);
-        for (String keyword : commonKeywords) {
-            if (keyword.length() > 3 && scrapedText.contains(keyword)) {
-                attributes++;
-                score += 0.5; // Lower weight for keyword matches
+        // Enhanced brand matching with fuzzy logic
+        String originalBrand = extractUniversalBrand(originalProduct.getName());  
+        if (originalBrand != null && !originalBrand.isEmpty()) {
+            attributes++;
+            if (scrapedText.contains(originalBrand.toLowerCase())) {
+                score += 1.2; // High weight for brand matches
                 matches++;
-                logger.debug("Keyword match found: {}", keyword);
+                logger.debug("✓ BRAND match found: {}", originalBrand);
+            } else {
+                logger.debug("✗ NO brand match for: {}", originalBrand);
+            }
+        }
+        
+        // Size/dimension matching for applicable products
+        String[] sizePatterns = extractSizePatterns(originalText);
+        for (String sizePattern : sizePatterns) {
+            if (!sizePattern.isEmpty() && scrapedText.contains(sizePattern.toLowerCase())) {
+                attributes++;
+                score += 0.8;
+                matches++;
+                logger.debug("✓ SIZE pattern match found: {}", sizePattern);
             }
         }
         
@@ -945,114 +1003,164 @@ public class ProductService {
         if (attributes > 0) {
             finalScore = score / attributes;
         } else {
-            // If no specific attributes found, give a moderate score based on text similarity
-            finalScore = 0.4; // Increased base score for products without structured attributes
+            // If no specific attributes found, give a base score for general products
+            // This is crucial for products without structured attributes
+            finalScore = calculateFallbackTextSimilarity(originalText, scrapedText);
         }
         
-        logger.debug("Attribute matching: {}/{} matches, {} total attributes, final score: {}", 
-            matches, attributes, attributes, String.format("%.3f", finalScore));
+        logger.debug("Attribute matching: {}/{} matches, {} total attributes, final score: {} (category: {})", 
+            matches, attributes, attributes, String.format("%.3f", finalScore), productCategory);
         
         return Math.min(1.0, finalScore); // Cap at 1.0
     }
       /**
-     * Extract important keywords from product text for attribute matching
+     * Extract category-specific keywords for better matching
      */
-    private String[] extractImportantKeywords(String text) {
-        // Extract meaningful keywords (model numbers, sizes, technical terms)
-        return java.util.Arrays.stream(text.toLowerCase()
-                   .replaceAll("[^a-z0-9\\s]", " ")
-                   .split("\\s+"))
-                   .filter(word -> word.length() > 3)
-                   .filter(word -> word.matches(".*\\d.*") || word.matches("^[a-z]{4,}$")) // Numbers or long words
-                   .distinct()
-                   .limit(10) // Limit to 10 keywords
-                   .toArray(String[]::new);
-    }
-    
-    /**
-     * Check if specification values are compatible (handles variants)
-     */
-    private boolean areSpecValuesCompatible(String original, String scraped) {
-        // Exact match
-        if (original.equals(scraped)) {
-            return true;
-        }
-        
-        // Numeric tolerance for measurements (10% tolerance)
-        try {
-            double origVal = extractNumericValue(original);
-            double scrapedVal = extractNumericValue(scraped);
-            if (origVal > 0 && scrapedVal > 0) {
-                double tolerance = Math.max(origVal, scrapedVal) * 0.1;
-                return Math.abs(origVal - scrapedVal) <= tolerance;
-            }
-        } catch (Exception e) {
-            // Continue with text comparison
-        }
-        
-        // Partial match for complex values
-        return original.contains(scraped) || scraped.contains(original);
-    }
-    
-    /**
-     * Extract numeric value from specification string
-     */
-    private double extractNumericValue(String value) {
-        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("([0-9]+\\.?[0-9]*)");
-        java.util.regex.Matcher matcher = pattern.matcher(value);
-        if (matcher.find()) {
-            return Double.parseDouble(matcher.group(1));
-        }
-        return 0.0;
-    }
-    
-    /**
-     * Calculate score based on key term overlap (important words)
-     */
-    private double calculateKeyTermScore(String originalText, String scrapedText) {
-        // Extract important terms (nouns, adjectives, numbers)
-        Set<String> originalKeyTerms = extractKeyTerms(originalText);
-        Set<String> scrapedKeyTerms = extractKeyTerms(scrapedText);
-        
-        if (originalKeyTerms.isEmpty()) {
-            return 0.5; // Default score
-        }
-        
-        Set<String> intersection = new HashSet<>(originalKeyTerms);
-        intersection.retainAll(scrapedKeyTerms);
-        
-        return (double) intersection.size() / originalKeyTerms.size();
-    }
-    
-    /**
-     * Extract key terms from product text
-     */
-    private Set<String> extractKeyTerms(String text) {
-        Set<String> keyTerms = new HashSet<>();
+    private String[] extractCategorySpecificKeywords(String text, String category) {
+        Set<String> keywords = new HashSet<>();
         String[] words = text.toLowerCase().split("\\W+");
         
-        // Common stop words to exclude
-        Set<String> stopWords = Set.of("the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "is", "are", "was", "were", "been", "be", "have", "has", "had", "do", "does", "did", "will", "would", "could", "should", "may", "might", "can", "shall");
-        
-        for (String word : words) {
-            if (word.length() > 2 && !stopWords.contains(word)) {
-                // Include numbers, brand-like words, and significant terms
-                if (word.matches(".*\\d.*") || word.length() > 4 || isLikelyBrandOrModel(word)) {
-                    keyTerms.add(word);
+        switch (category.toLowerCase()) {
+            case "books":
+                // For books, focus on title words, author-like terms, and book-specific terms
+                for (String word : words) {
+                    if (word.length() > 3 && !isCommonStopWord(word)) {
+                        // Include meaningful words from book titles
+                        if (word.matches("^[a-z]+$") && word.length() > 4) {
+                            keywords.add(word);
+                        }
+                    }
                 }
-            }
+                break;
+                
+            case "home":
+            case "kitchen":
+                // For home/kitchen, focus on material, size, and function keywords
+                String[] homeKeywords = {"steel", "plastic", "wood", "glass", "ceramic", "aluminum", 
+                                       "storage", "organizer", "container", "holder", "rack"};
+                for (String homeKeyword : homeKeywords) {
+                    if (text.contains(homeKeyword)) {
+                        keywords.add(homeKeyword);
+                    }
+                }
+                break;
+                
+            case "clothing":
+                // For clothing, focus on size, material, and style keywords
+                String[] clothingKeywords = {"cotton", "polyester", "silk", "wool", "denim", 
+                                           "sleeve", "collar", "pocket", "zipper"};
+                for (String clothingKeyword : clothingKeywords) {
+                    if (text.contains(clothingKeyword)) {
+                        keywords.add(clothingKeyword);
+                    }
+                }
+                break;
+                
+            case "health":
+            case "beauty":
+                // For health/beauty, focus on ingredients and purpose keywords
+                String[] healthKeywords = {"vitamin", "organic", "natural", "serum", "cream", 
+                                         "lotion", "supplement", "tablets", "capsules"};
+                for (String healthKeyword : healthKeywords) {
+                    if (text.contains(healthKeyword)) {
+                        keywords.add(healthKeyword);
+                    }
+                }
+                break;
+                
+            default:
+                // For general products, extract meaningful terms
+                for (String word : words) {
+                    if (word.length() > 3 && !isCommonStopWord(word)) {                        // Include numbers, long words, or brand-like terms
+                        if (word.matches(".*\\d.*") || word.length() > 5) {
+                            keywords.add(word);
+                        }
+                    }
+                }
         }
         
-        return keyTerms;
+        return keywords.stream().limit(8).toArray(String[]::new);
     }
     
     /**
-     * Check if a word is likely a brand or model identifier
+     * Extract size/dimension patterns from text
      */
-    private boolean isLikelyBrandOrModel(String word) {
-        // Contains mix of letters and numbers, or is capitalized in original context
-        return word.matches(".*[0-9].*[a-z].*") || word.matches(".*[a-z].*[0-9].*") ||
-               word.matches("^[A-Z][a-z]+$");
+    private String[] extractSizePatterns(String text) {
+        Set<String> patterns = new HashSet<>();
+        
+        // Look for dimension patterns (e.g., "12x8", "5 inch", "20cm")
+        java.util.regex.Pattern dimensionPattern = java.util.regex.Pattern.compile(
+            "\\b\\d+[x×]\\d+|\\d+\\s*(inch|inches|cm|mm|ft|feet|meter|metres?)\\b", 
+            java.util.regex.Pattern.CASE_INSENSITIVE);
+        java.util.regex.Matcher matcher = dimensionPattern.matcher(text);
+        
+        while (matcher.find()) {
+            patterns.add(matcher.group().toLowerCase());
+        }
+        
+        // Look for common size indicators
+        String[] sizeKeywords = {"small", "medium", "large", "xl", "xxl", "mini", "compact", "full", "queen", "king"};
+        String lowerText = text.toLowerCase();
+        for (String size : sizeKeywords) {
+            if (lowerText.contains(size)) {
+                patterns.add(size);
+            }
+        }
+        
+        return patterns.toArray(String[]::new);
+    }
+    
+    /**
+     * Calculate fallback text similarity for products without structured attributes
+     */
+    private double calculateFallbackTextSimilarity(String originalText, String scrapedText) {
+        if (originalText == null || scrapedText == null || originalText.trim().isEmpty()) {
+            return 0.3; // Base score for minimal data
+        }
+        
+        // Use Jaro-Winkler similarity as base
+        org.apache.commons.text.similarity.JaroWinklerSimilarity jaroWinkler = 
+            new org.apache.commons.text.similarity.JaroWinklerSimilarity();
+        double jaroScore = jaroWinkler.apply(originalText, scrapedText);
+        
+        // Boost score with common word overlap
+        String[] originalWords = originalText.split("\\s+");
+        String[] scrapedWords = scrapedText.split("\\s+");
+        
+        Set<String> originalSet = new HashSet<>(Arrays.asList(originalWords));
+        Set<String> scrapedSet = new HashSet<>(Arrays.asList(scrapedWords));
+        
+        // Remove stop words
+        originalSet.removeIf(this::isCommonStopWord);
+        scrapedSet.removeIf(this::isCommonStopWord);
+        
+        // Calculate word overlap
+        Set<String> intersection = new HashSet<>(originalSet);
+        intersection.retainAll(scrapedSet);
+        
+        double wordOverlap = originalSet.isEmpty() ? 0.0 : (double) intersection.size() / originalSet.size();
+        
+        // Combine scores with weights
+        double combinedScore = (jaroScore * 0.6) + (wordOverlap * 0.4);
+        
+        // Ensure minimum score for reasonable similarity
+        return Math.max(0.3, combinedScore);
+    }
+    
+    /**
+     * Check if a word is a common stop word
+     */
+    private boolean isCommonStopWord(String word) {
+        if (word == null || word.length() < 2) return true;
+        
+        Set<String> stopWords = Set.of("the", "and", "or", "but", "in", "on", "at", "to", "for", 
+                                     "of", "with", "by", "is", "are", "was", "were", "been", "be", 
+                                     "have", "has", "had", "do", "does", "did", "will", "would", 
+                                     "could", "should", "may", "might", "can", "shall", "this", 
+                                     "that", "these", "those", "from", "up", "down", "out", "off", 
+                                     "over", "under", "again", "further", "then", "once");
+        
+        return stopWords.contains(word.toLowerCase());
     }
     
     /**
@@ -1534,6 +1642,42 @@ public class ProductService {
         
         return null;
     }
+      /**
+     * Check if specification values are compatible (handles variants)
+     */
+    private boolean areSpecValuesCompatible(String original, String scraped) {
+        // Exact match
+        if (original.equals(scraped)) {
+            return true;
+        }
+        
+        // Numeric tolerance for measurements (10% tolerance)
+        try {
+            double origVal = extractNumericValue(original);
+            double scrapedVal = extractNumericValue(scraped);
+            if (origVal > 0 && scrapedVal > 0) {
+                double tolerance = Math.max(origVal, scrapedVal) * 0.1;
+                return Math.abs(origVal - scrapedVal) <= tolerance;
+            }
+        } catch (Exception e) {
+            // Continue with text comparison
+        }
+        
+        // Partial match for complex values
+        return original.contains(scraped) || scraped.contains(original);
+    }
+    
+    /**
+     * Extract numeric value from specification string
+     */
+    private double extractNumericValue(String value) {
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("([0-9]+\\.?[0-9]*)");
+        java.util.regex.Matcher matcher = pattern.matcher(value);
+        if (matcher.find()) {
+            return Double.parseDouble(matcher.group(1));
+        }
+        return 0.0;
+    }
     
     /**
      * Check if two specification values are variants of each other
@@ -1671,5 +1815,156 @@ public class ProductService {
         }
         
         return false;
+    }
+    
+    /**
+     * Dynamic threshold calculation based on product type and available attributes
+     */
+    private double getDynamicMatchingThreshold(ProductDocument originalProduct, ShoppingProduct scrapedProduct) {
+        // Start with base threshold
+        double baseThreshold = 0.45; // Lowered from 0.62 for better general product matching
+        
+        // Detect product category to adjust threshold
+        String productCategory = detectProductCategory(originalProduct);
+        
+        switch (productCategory.toLowerCase()) {
+            case "electronics":
+            case "computers":
+            case "smartphones":
+                // Electronics can have higher threshold due to structured specs
+                return 0.58;
+                
+            case "books":
+                // Books often have generic titles, lower threshold
+                return 0.35;
+                
+            case "home":
+            case "kitchen":
+            case "tools":
+            case "automotive":
+                // Home/kitchen items often have less structured data
+                return 0.40;
+                
+            case "clothing":
+            case "fashion":
+                // Fashion items often have size/color variants
+                return 0.42;
+                
+            case "health":
+            case "beauty":
+                // Beauty products often have brand/size focus
+                return 0.38;
+                
+            default:
+                // General products - most lenient threshold
+                return baseThreshold;
+        }
+    }
+    
+    /**
+     * Detect product category based on product name and attributes
+     */
+    private String detectProductCategory(ProductDocument product) {
+        if (product == null || product.getName() == null) {
+            return "general";
+        }
+        
+        String name = product.getName().toLowerCase();
+        String description = product.getDescription() != null ? product.getDescription().toLowerCase() : "";
+        String combined = name + " " + description;
+        
+        // Electronics indicators
+        if (hasElectronicsKeywords(combined) || 
+            product.getStorage() != null || product.getRam() != null ||
+            product.getModel() != null) {
+            return "electronics";
+        }
+        
+        // Books indicators
+        if (combined.contains("book") || combined.contains("novel") || 
+            combined.contains("author") || combined.contains("isbn") ||
+            combined.contains("paperback") || combined.contains("hardcover") ||
+            combined.contains("kindle") || combined.contains("audiobook")) {
+            return "books";
+        }
+        
+        // Home/Kitchen indicators
+        if (combined.matches(".*(kitchen|home|house|furniture|decor|storage|organizer|container|utensil|cookware|bedding|bathroom|cleaning).*")) {
+            return "home";
+        }
+        
+        // Clothing/Fashion indicators
+        if (combined.matches(".*(shirt|pants|dress|shoes|clothing|fashion|apparel|wear|size|fit).*")) {
+            return "clothing";
+        }
+        
+        // Health/Beauty indicators  
+        if (combined.matches(".*(beauty|cosmetic|skincare|health|vitamin|supplement|lotion|cream|shampoo).*")) {
+            return "health";
+        }
+        
+        // Tools/Automotive indicators
+        if (combined.matches(".*(tool|repair|automotive|car|vehicle|mechanic|screwdriver|wrench|drill).*")) {
+            return "tools";
+        }
+        
+        return "general";
+    }
+    
+    /**
+     * Check if product has electronics-related keywords
+     */
+    private boolean hasElectronicsKeywords(String text) {
+        String[] electronicsKeywords = {
+            "iphone", "samsung", "laptop", "computer", "tablet", "phone", "smartphone",
+            "tv", "monitor", "camera", "headphones", "speaker", "gaming", "console",
+            "processor", "cpu", "gpu", "memory", "storage", "ssd", "hdd", "usb",
+            "bluetooth", "wifi", "wireless", "charger", "battery", "electronic",
+            "digital", "smart", "tech", "device", "gadget"
+        };
+        
+        for (String keyword : electronicsKeywords) {
+            if (text.contains(keyword)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Calculate score based on key term overlap (important words)
+     */
+    private double calculateKeyTermScore(String originalText, String scrapedText) {
+        // Extract important terms (nouns, adjectives, numbers)
+        Set<String> originalKeyTerms = extractKeyTerms(originalText);
+        Set<String> scrapedKeyTerms = extractKeyTerms(scrapedText);
+        
+        if (originalKeyTerms.isEmpty()) {
+            return 0.5; // Default score
+        }
+        
+        Set<String> intersection = new HashSet<>(originalKeyTerms);
+        intersection.retainAll(scrapedKeyTerms);
+        
+        return (double) intersection.size() / originalKeyTerms.size();
+    }
+    
+    /**
+     * Extract key terms from product text
+     */
+    private Set<String> extractKeyTerms(String text) {
+        Set<String> keyTerms = new HashSet<>();
+        String[] words = text.toLowerCase().split("\\W+");
+        
+        for (String word : words) {
+            if (word.length() > 2 && !isCommonStopWord(word)) {
+                // Include numbers, brand-like words, and significant terms
+                if (word.matches(".*\\d.*") || word.length() > 4) {
+                    keyTerms.add(word);
+                }
+            }
+        }
+        
+        return keyTerms;
     }
 }

@@ -245,13 +245,29 @@ public class OxylabsShoppingScraper {    private static final Logger logger = Lo
             }
 
             logger.debug("Processing item {} of {}", i + 1, jsonArray.length());
-            logger.trace("Item structure: {}", item.keySet());
+            logger.trace("Item structure: {}", item.keySet());            // Check if this object is a product - Enhanced for multiple field names
+            String title = extractProductTitle(item);
+            String url = extractProductUrl(item);
 
-            // Check if this object is a product
-            String title = JsonUtils.optString(item, "title", null);
-            String url = JsonUtils.optString(item, "url", null);
+            // Debug logging for every item
+            logger.debug("Processing item {}: title='{}', url='{}'", i, title, url);
 
-            if (title != null && url != null && !url.isEmpty()) {
+            // Enhanced debugging for skipped items
+            if (title == null) {
+                logger.warn("TITLE EXTRACTION FAILED for item at index {} - Available keys: {}", i, item.keySet());
+                // Log some field values to help debug
+                logger.warn("  Direct title field: '{}'", JsonUtils.optString(item, "title", "NULL"));
+                logger.warn("  Direct name field: '{}'", JsonUtils.optString(item, "name", "NULL"));
+                logger.warn("  Type field: '{}'", JsonUtils.optString(item, "type", "NULL"));
+            }
+            if (url == null) {
+                logger.warn("URL EXTRACTION FAILED for item at index {} - Available keys: {}", i, item.keySet());
+                // Log some field values to help debug
+                logger.warn("  Direct url field: '{}'", JsonUtils.optString(item, "url", "NULL"));
+                logger.warn("  Direct link field: '{}'", JsonUtils.optString(item, "link", "NULL"));
+            }
+            
+            if (title != null && url != null && !title.trim().isEmpty() && !url.trim().isEmpty()) {
                 logger.debug("Found valid product candidate:");
                 logger.debug("  Title: '{}'", title);
                 logger.debug("  URL: '{}'", url);
@@ -337,12 +353,28 @@ public class OxylabsShoppingScraper {    private static final Logger logger = Lo
                     String.format("%.2f", priceInfo.value), 
                     priceInfo.currency,
                     priceInfo.source);
-                    
-            } else {
+                      } else {
                 skippedItems++;
-                // If not a product, check for nested arrays to parse
-                logger.debug("Item at index {} is not a direct product (missing title or URL)", i);
-                logger.debug("Available keys: {}", item.keySet());
+                // Enhanced debugging for skipped items
+                logger.debug("Item at index {} is not a direct product - Details:", i);
+                logger.debug("  Title extraction result: '{}'", title);
+                logger.debug("  URL extraction result: '{}'", url);
+                logger.debug("  Available keys: {}", item.keySet());
+                
+                // Log first few characters of key values to help debug field names
+                for (String key : item.keySet()) {
+                    Object value = item.opt(key);
+                    if (value instanceof String) {
+                        String strValue = (String) value;
+                        String preview = strValue.length() > 50 ? strValue.substring(0, 47) + "..." : strValue;
+                        logger.debug("    {}: '{}'", key, preview);
+                    } else if (value instanceof JSONObject || value instanceof JSONArray) {
+                        logger.debug("    {}: [{}]", key, value.getClass().getSimpleName());
+                    } else {
+                        logger.debug("    {}: {}", key, value);
+                    }
+                }
+                
                 logger.debug("Checking for nested product arrays...");
                 
                 boolean foundNested = false;
@@ -2167,27 +2199,7 @@ public class OxylabsShoppingScraper {    private static final Logger logger = Lo
         
         return totalWords > 0 ? (double) matches / totalWords : 0.0;
     }
-    
-    /**
-     * Extract product URL from search result object
-     */
-    private String extractProductUrl(JSONObject product) {
-        try {
-            if (product.has("url")) {
-                return product.getString("url");
-            }
-            if (product.has("product_id")) {
-                // Construct Google Shopping URL from product ID
-                String productId = product.getString("product_id");
-                return "https://shopping.google.com/product/" + productId;
-            }
-        } catch (Exception e) {
-            logger.debug("Error extracting URL: {}", e.getMessage());
-        }
-        return null;
-    }
-    
-    /**
+      /**
      * Fetch detailed specifications from Google Shopping URL
      */
     private ShoppingProduct fetchDetailedSpecsFromGoogleShopping(ShoppingProduct product, String googleShoppingUrl, String username, String password) throws Exception {
@@ -2642,5 +2654,139 @@ public class OxylabsShoppingScraper {    private static final Logger logger = Lo
         } catch (Exception e) {
             logger.debug("Error enhancing product attributes: {}", e.getMessage());
         }
+    }
+    
+    /**
+     * Enhanced product title extraction - tries multiple field names
+     */
+    private String extractProductTitle(JSONObject item) {
+        if (item == null) return null;
+          // Try common title field names
+        String[] titleFields = {"title", "name", "product_name", "display_name", "item_name", "heading", "snippet", "description", "product_title"};
+        
+        for (String field : titleFields) {
+            String title = JsonUtils.optString(item, field, null);
+            if (title != null && !title.trim().isEmpty()) {
+                logger.debug("Found title using field '{}': '{}'", field, title);
+                return title.trim();
+            }
+        }
+        
+        // Try nested title extraction
+        if (item.has("product")) {
+            JSONObject product = item.optJSONObject("product");
+            if (product != null) {
+                for (String field : titleFields) {
+                    String title = JsonUtils.optString(product, field, null);
+                    if (title != null && !title.trim().isEmpty()) {
+                        logger.debug("Found title in product.{}: '{}'", field, title);
+                        return title.trim();
+                    }
+                }
+            }
+        }
+        
+        // Try content nested extraction
+        if (item.has("content")) {
+            JSONObject content = item.optJSONObject("content");
+            if (content != null) {
+                for (String field : titleFields) {
+                    String title = JsonUtils.optString(content, field, null);
+                    if (title != null && !title.trim().isEmpty()) {
+                        logger.debug("Found title in content.{}: '{}'", field, title);
+                        return title.trim();
+                    }
+                }
+            }
+        }
+        
+        logger.debug("No title found - checked fields: {}", String.join(", ", titleFields));
+        return null;
+    }
+    
+    /**
+     * Enhanced product URL extraction - tries multiple field names
+     */
+    private String extractProductUrl(JSONObject item) {
+        if (item == null) return null;
+        
+        // Try common URL field names
+        String[] urlFields = {"url", "link", "product_url", "product_link", "href", "redirect_url", "target_url"};
+        
+        for (String field : urlFields) {
+            String url = JsonUtils.optString(item, field, null);
+            if (url != null && !url.trim().isEmpty()) {
+                logger.debug("Found URL using field '{}': '{}'", field, url);
+                return url.trim();
+            }
+        }
+        
+        // Try nested URL extraction
+        if (item.has("product")) {
+            JSONObject product = item.optJSONObject("product");
+            if (product != null) {
+                for (String field : urlFields) {
+                    String url = JsonUtils.optString(product, field, null);
+                    if (url != null && !url.trim().isEmpty()) {
+                        logger.debug("Found URL in product.{}: '{}'", field, url);
+                        return url.trim();
+                    }
+                }
+            }
+        }
+        
+        // Try content nested extraction  
+        if (item.has("content")) {
+            JSONObject content = item.optJSONObject("content");
+            if (content != null) {
+                for (String field : urlFields) {
+                    String url = JsonUtils.optString(content, field, null);
+                    if (url != null && !url.trim().isEmpty()) {
+                        logger.debug("Found URL in content.{}: '{}'", field, url);
+                        return url.trim();
+                    }
+                }
+            }
+        }
+        
+        // Try link object extraction
+        if (item.has("link")) {
+            Object linkObj = item.opt("link");
+            if (linkObj instanceof JSONObject) {
+                JSONObject link = (JSONObject) linkObj;
+                for (String field : urlFields) {
+                    String url = JsonUtils.optString(link, field, null);
+                    if (url != null && !url.trim().isEmpty()) {
+                        logger.debug("Found URL in link.{}: '{}'", field, url);
+                        return url.trim();
+                    }
+                }
+            } else if (linkObj instanceof String) {
+                String url = (String) linkObj;
+                if (!url.trim().isEmpty()) {
+                    logger.debug("Found URL from direct link field: '{}'", url);
+                    return url.trim();
+                }
+            }
+        }
+          logger.debug("No URL found - checked fields: {}", String.join(", ", urlFields));
+          // Fallback: If this looks like a book product, provide a search URL
+        if (item.has("title") || item.has("name")) {
+            String title = JsonUtils.optString(item, "title", JsonUtils.optString(item, "name", null));
+            if (title != null && (title.toLowerCase().contains("book") || 
+                                title.toLowerCase().contains("author") ||
+                                title.toLowerCase().contains("paperback") ||
+                                title.toLowerCase().contains("hardcover"))) {
+                try {
+                    String searchUrl = "https://www.google.com/search?q=" + java.net.URLEncoder.encode(title, "UTF-8") + "&tbm=shop";
+                    logger.debug("Generated fallback search URL for book: '{}'", searchUrl);
+                    return searchUrl;
+                } catch (Exception e) {
+                    logger.debug("Failed to encode title for fallback URL: {}", e.getMessage());
+                }
+            }
+        }
+        
+        return null;
     }
 }
